@@ -6,6 +6,11 @@ from typing import Iterable
 from tokenising import *
 
 
+@dataclass
+class BindingSyntax:
+    name: str
+    value: ExpressionSyntax
+
 class ExpressionSyntax:
     pass
 
@@ -24,9 +29,15 @@ class StringExpressionSyntax(ExpressionSyntax):
 def parse(source):
     token_iterable = tokenise(source)
     tokens = Tokens(token_iterable)
-    expression = _parse_expression(tokens)
+    expression = _parse_binding(tokens)
     tokens.expect_end_of_source()
     return expression
+
+def _parse_binding(tokens):
+    name = tokens.expect(IdentifierToken).name
+    tokens.expect(EqualsToken)
+    value = _parse_expression(tokens)
+    return BindingSyntax(name, value)
 
 def _parse_expression(tokens):
     return tokens.branch('an expression',
@@ -121,6 +132,7 @@ _TOKEN_TYPE_DESCRIPTIONS = {
     IntegerToken: 'an integer',
     IdentifierToken: 'an identifier',
     StringToken: 'a string',
+    EqualsToken: 'an equals symbol'
 }
 _END_OF_SOURCE = object()
 _END_OF_SOURCE_DESCRIPTION = 'end of source'
@@ -128,10 +140,17 @@ _END_OF_SOURCE_DESCRIPTION = 'end of source'
 
 def _main():
     import io
+    source = io.StringIO("greeting = 'Hello, \\(name)!'")
+    actual = parse(source)
+    expected = BindingSyntax(
+        'greeting',
+        StringExpressionSyntax([
+            'Hello, ',
+            IdentifierExpressionSyntax('name'),
+            '!']))
     from pprint import pprint
-    source = io.StringIO("'Hello, \\(name)'")
-    expression = parse(source)
-    pprint(expression)
+    pprint(actual)
+    assert actual == expected
 
 if __name__ == '__main__':
     _main()

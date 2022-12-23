@@ -39,6 +39,10 @@ class CharacterEscape(Enum):
 class ExpressionEscapeStringTokenPart(StringTokenPart):
     tokens: Iterable[Token]
 
+@dataclass
+class EqualsToken(Token):
+    pass
+
 def tokenise(source):
     yield from _tokenise_until(source, on_end_of_source=lambda: None)
     remainder = source.read() 
@@ -80,6 +84,16 @@ def _characters_where(source, predicate):
     return ''.join(characters)
 
 _WHITESPACE = (' ', '\t')
+
+class EqualsTokeniser:
+
+    @staticmethod
+    def enter(character):
+        return character == '='
+
+    @staticmethod
+    def tokenise(head, tail):
+        return EqualsToken()
 
 class StringTokeniser:
 
@@ -163,6 +177,7 @@ class IdentifierTokeniser:
         return 'a' <= character <= 'z'
 
 _TOKENISERS = [
+    EqualsTokeniser,
     StringTokeniser(),
     IdentifierTokeniser(),
     IntegerTokeniser(),
@@ -190,7 +205,6 @@ def _main():
     source = io.StringIO(
         " \t repeat 3 'Two plus three equals:\\n\\t\\(add\t2 3).'   \t\t")
     actual = list(tokenise(source))
-
     expected = [
         IdentifierToken('repeat'),
         IntegerToken('3'),
@@ -208,8 +222,7 @@ def _main():
     ]
     from pprint import pprint
     pprint(actual)
-
-    assert expected == actual
+    assert actual == expected
 
 if __name__ == '__main__':
     _main()
