@@ -40,38 +40,49 @@ class ExpressionEscapeStringTokenPart(StringTokenPart):
     tokens: Iterable[Token]
 
 def tokenise(source):
-    tokens, tail = _tokenise_until(source, on_end_of_source=lambda: None)
-    if tail:
-        raise ValueError(f'Untokenised tail: {tail!r}')
+    tokens = _tokenise_until(source, on_end_of_source=lambda: None)
+    remainder = source.read() 
+    if remainder:
+        raise ValueError(f'Untokenised tail: {remainder!r}')
     return tokens
 
 def _tokenise_until(source, *, on_end_of_source, stoppage_character=None):
     tokens = []
-    tail = source
     while True:
-        token, tail = _next_token(tail, on_end_of_source, stoppage_character)
+        token = _next_token(source, on_end_of_source, stoppage_character)
         if token is None:
             break
         tokens.append(token)
-    return (tokens, tail)
+    return tokens
 
 def _next_token(source, on_end_of_source, stoppage_character):
     source = _skip_ignored(source)
-    if not source:
-        return (on_end_of_source(), source)
-    head = source[0]
-    tail = source[1:]
+    head = _read_head(source)
+    if head is None:
+        return on_end_of_source()
     for tokeniser in _TOKENISERS:
         if tokeniser.enter(head):
-            return tokeniser.tokenise(head, tail)
+            return tokeniser.tokenise(head, source)
     if head == stoppage_character:
-        return (None, tail)
+        return None
     raise ValueError(f'Invalid character: {head!r}')
 
 def _skip_ignored(source):
-    while source and source[0] in _WHITESPACE:
-        source = source[1:]
+    _characters_where(source, lambda character: character in _WHITESPACE)
     return source
+
+def _characters_where(source, predicate):
+    characters = []
+    while True:
+        position = source.tell()
+        character = _read_head(source)
+        if character is None:
+            break
+        if not predicate(character):
+            source.seek(position)
+            break
+        characters.append(character)
+    return ''.join(characters)
 
 _WHITESPACE = (' ', '\t')
 
@@ -81,8 +92,8 @@ class StringTokeniser:
         return character == _STRING_DELIMITER
 
     def tokenise(self, head, tail):
-        parts, tail = self._tokenise_parts(tail)
-        return (StringToken(parts), tail)
+        parts = self._tokenise_parts(tail)
+        return StringToken(parts)
 
     def _tokenise_parts(self, source):
         plain_characters = []
@@ -92,27 +103,27 @@ class StringTokeniser:
                 parts.append(PlainStringTokenPart(''.join(plain_characters)))
                 plain_characters.clear()
         while True:
-            head, source = _split_first_character(source, 'string')
+            head = _read_head_or_raise(source, 'string')
             if head == _STRING_DELIMITER:
                 commit_plain_token()
-                return (parts, source)    
+                return parts
             if head == '\\':
                 commit_plain_token()
-                escape_token, source = self._tokenise_escape(source)
+                escape_token = self._tokenise_escape(source)
                 parts.append(escape_token)
             else:
                 plain_characters.append(head)
 
     def _tokenise_escape(self, source):
-        head, tail = _split_first_character(source, 'string escape')
+        head = _read_head_or_raise(source, 'string escape')
         if head == '(':
-            tokens, tail = _tokenise_until(
-                tail,
+            tokens = _tokenise_until(
+                source,
                 on_end_of_source=self._throw_for_end_of_source,
                 stoppage_character=_ESCAPE_EXPRESSION_STOPPAGE_CHARACTER)
-            return (ExpressionEscapeStringTokenPart(tokens), tail)
+            return ExpressionEscapeStringTokenPart(tokens)
         if head in _CHARACTER_ESCAPES:
-            return (CharacterEscapeStringTokenPart(_CHARACTER_ESCAPES[head]), tail)
+            return CharacterEscapeStringTokenPart(_CHARACTER_ESCAPES[head])
         raise ValueError(f'Invalid escape character: {head!r}')
 
     def _throw_for_end_of_source(self):
@@ -163,23 +174,26 @@ _TOKENISERS = [
 ]
 
 def _tokenise_characters_where(first, tail, predicate, wrapper):
-    characters = [first]
-    while tail:
-        head = tail[0]
-        if not predicate(head):
-            break
-        characters.append(head)
-        tail = tail[1:]
-    return (wrapper(''.join(characters)), tail)
+    characters = first + _characters_where(tail, predicate)
+    return wrapper(''.join(characters))
 
-def _split_first_character(string, location):
-    if not string:
+def _read_head_or_raise(source, location):
+    head = _read_head(source)
+    if head is None:
         raise ValueError(f'Unexpected end of source inside {location}')
-    return (string[0], string[1:])
+    return head
+
+def _read_head(source):
+    head = source.read(1)
+    if not head:
+        return None
+    return head
 
 
 def _main():
-    source = " \t repeat 3 'Two plus three equals:\\n\\t\\(add\t2 3).'   \t\t"
+    import io
+    source = io.StringIO(
+        " \t repeat 3 'Two plus three equals:\\n\\t\\(add\t2 3).'   \t\t")
     actual = list(tokenise(source))
 
     expected = [
