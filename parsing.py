@@ -110,12 +110,10 @@ class Tokens:
         return token
 
     def branch(self, description, *branches):
-        saved_position = self._position
         for branch in branches:
             result = self._try(branch)
             if result is not None:
                 return result
-            self._position = saved_position
         raise self._error(description, self._get_next())
 
     def zero_or_more(self, parser):
