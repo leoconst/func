@@ -40,20 +40,15 @@ class ExpressionEscapeStringTokenPart(StringTokenPart):
     tokens: Iterable[Token]
 
 def tokenise(source):
-    tokens = _tokenise_until(source, on_end_of_source=lambda: None)
+    yield from _tokenise_until(source, on_end_of_source=lambda: None)
     remainder = source.read() 
     if remainder:
         raise ValueError(f'Untokenised tail: {remainder!r}')
-    return tokens
 
 def _tokenise_until(source, *, on_end_of_source, stoppage_character=None):
-    tokens = []
-    while True:
-        token = _next_token(source, on_end_of_source, stoppage_character)
-        if token is None:
-            break
-        tokens.append(token)
-    return tokens
+    while ((token := _next_token(source, on_end_of_source, stoppage_character))
+            is not None):
+        yield token
 
 def _next_token(source, on_end_of_source, stoppage_character):
     source = _skip_ignored(source)
@@ -92,25 +87,24 @@ class StringTokeniser:
         return character == _STRING_DELIMITER
 
     def tokenise(self, head, tail):
-        parts = self._tokenise_parts(tail)
+        parts = list(self._tokenise_parts(tail))
         return StringToken(parts)
 
     def _tokenise_parts(self, source):
         plain_characters = []
-        parts = []
-        def commit_plain_token():
+        def zero_or_one_plain_token():
             if plain_characters:
-                parts.append(PlainStringTokenPart(''.join(plain_characters)))
+                plain_string = ''.join(plain_characters)
+                yield PlainStringTokenPart(plain_string)
                 plain_characters.clear()
         while True:
             head = _read_head_or_raise(source, 'string')
             if head == _STRING_DELIMITER:
-                commit_plain_token()
-                return parts
+                yield from zero_or_one_plain_token()
+                return
             if head == '\\':
-                commit_plain_token()
-                escape_token = self._tokenise_escape(source)
-                parts.append(escape_token)
+                yield from zero_or_one_plain_token()
+                yield self._tokenise_escape(source)
             else:
                 plain_characters.append(head)
 
@@ -121,13 +115,14 @@ class StringTokeniser:
                 source,
                 on_end_of_source=self._throw_for_end_of_source,
                 stoppage_character=_ESCAPE_EXPRESSION_STOPPAGE_CHARACTER)
-            return ExpressionEscapeStringTokenPart(tokens)
+            token_list = list(tokens)
+            return ExpressionEscapeStringTokenPart(token_list)
         if head in _CHARACTER_ESCAPES:
             return CharacterEscapeStringTokenPart(_CHARACTER_ESCAPES[head])
         raise ValueError(f'Invalid escape character: {head!r}')
 
     def _throw_for_end_of_source(self):
-        raise ValueError(f'Unexpected end of source inside escape expression, '
+        raise ValueError('Unexpected end of source inside escape expression, '
             f'expected {_ESCAPE_EXPRESSION_STOPPAGE_CHARACTER!r}')
 
 _STRING_DELIMITER = "'"
