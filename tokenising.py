@@ -164,17 +164,23 @@ class IntegerTokeniser:
 class IdentifierTokeniser:
 
     def enter(self, character):
-        return self._is_identifier_character(character)
+        return self._is_letter_or_underscore(character)
 
     def tokenise(self, head, tail):
         return _tokenise_characters_where(
             head,
             tail,
-            self._is_identifier_character,
+            self._is_letter_or_underscore,
             IdentifierToken)
 
-    def _is_identifier_character(self, character):
-        return 'a' <= character <= 'z'
+    def _is_letter_or_underscore(self, character):
+        return ('a' <= character <= 'z'
+            or 'A' <= character <= 'Z'
+            or character == '_')
+
+    def _is_identifier_tail_character(self, character):
+        return (self._is_letter_or_underscore(character)
+            or '0' <= character <= '9')
 
 _TOKENISERS = [
     EqualsTokeniser,
