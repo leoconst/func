@@ -85,17 +85,17 @@ class Tokens:
     def expect(self, token_type):
         return self._expect(
             lambda token: isinstance(token, token_type),
-            self._describe_token_type(token_type))
+            lambda: self._describe_token_type(token_type))
 
     def expect_end_of_source(self):
         return self._expect(
             lambda token: token is _END_OF_SOURCE,
-            _END_OF_SOURCE_DESCRIPTION)
+            lambda: _END_OF_SOURCE_DESCRIPTION)
 
-    def _expect(self, predicate, expected):
+    def _expect(self, predicate, describer):
         token = self._get_next()
         if not predicate(token):
-            raise self._error(expected, token)
+            raise self._error(describer(), token)
         return token
 
     def branch(self, description, *branches):
