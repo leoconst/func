@@ -61,12 +61,9 @@ def _next_token(source, on_end_of_source, stoppage_character):
         return (on_end_of_source(), source)
     head = source[0]
     tail = source[1:]
-    if head == STRING_DELIMITER:
-        return _tokenise_string(tail)
-    if _is_identifier_character(head):
-        return _tokenise_identifier(head, tail)
-    if _is_integer_character(head):
-        return _tokenise_integer(head, tail)
+    for tokeniser in _TOKENISERS:
+        if tokeniser.enter(head):
+            return tokeniser.tokenise(head, tail)
     if head == stoppage_character:
         return (None, tail)
     raise ValueError(f'Invalid character: {head!r}')
@@ -78,73 +75,92 @@ def _skip_ignored(source):
 
 _WHITESPACE = (' ', '\t')
 
-def _tokenise_string(source):
-    parts, tail = _tokenise_string_parts(source)
-    return (StringToken(parts), tail)
+class StringTokeniser:
 
-def _tokenise_string_parts(source):
-    plain_characters = []
-    parts = []
-    def commit_plain_token():
-        if plain_characters:
-            parts.append(PlainStringTokenPart(''.join(plain_characters)))
-            plain_characters.clear()
-    while True:
-        head, source = _split_first_character(source, 'string')
-        if head == STRING_DELIMITER:
-            commit_plain_token()
-            return (parts, source)    
-        if head == '\\':
-            commit_plain_token()
-            escape_token, source = _tokenise_string_escape(source)
-            parts.append(escape_token)
-        else:
-            plain_characters.append(head)
+    def enter(self, character):
+        return character == _STRING_DELIMITER
 
-STRING_DELIMITER = "'"
+    def tokenise(self, head, tail):
+        parts, tail = self._tokenise_parts(tail)
+        return (StringToken(parts), tail)
 
-def _tokenise_string_escape(source):
-    head, tail = _split_first_character(source, 'string escape')
-    if head == '(':
-        tokens, tail = _tokenise_until(
-            tail,
-            on_end_of_source=_throw_for_end_of_source,
-            stoppage_character=_ESCAPE_EXPRESSION_STOPPAGE_CHARACTER)
-        return (ExpressionEscapeStringTokenPart(tokens), tail)
-    if head in _CHARACTER_ESCAPES:
-        return (CharacterEscapeStringTokenPart(_CHARACTER_ESCAPES[head]), tail)
-    raise ValueError(f'Invalid escape character: {head!r}')
+    def _tokenise_parts(self, source):
+        plain_characters = []
+        parts = []
+        def commit_plain_token():
+            if plain_characters:
+                parts.append(PlainStringTokenPart(''.join(plain_characters)))
+                plain_characters.clear()
+        while True:
+            head, source = _split_first_character(source, 'string')
+            if head == _STRING_DELIMITER:
+                commit_plain_token()
+                return (parts, source)    
+            if head == '\\':
+                commit_plain_token()
+                escape_token, source = self._tokenise_escape(source)
+                parts.append(escape_token)
+            else:
+                plain_characters.append(head)
 
-def _throw_for_end_of_source():
-    raise ValueError(f'Unexpected end of source inside escape expression, '
-        f'expected {_ESCAPE_EXPRESSION_STOPPAGE_CHARACTER!r}')
+    def _tokenise_escape(self, source):
+        head, tail = _split_first_character(source, 'string escape')
+        if head == '(':
+            tokens, tail = _tokenise_until(
+                tail,
+                on_end_of_source=self._throw_for_end_of_source,
+                stoppage_character=_ESCAPE_EXPRESSION_STOPPAGE_CHARACTER)
+            return (ExpressionEscapeStringTokenPart(tokens), tail)
+        if head in _CHARACTER_ESCAPES:
+            return (CharacterEscapeStringTokenPart(_CHARACTER_ESCAPES[head]), tail)
+        raise ValueError(f'Invalid escape character: {head!r}')
 
+    def _throw_for_end_of_source(self):
+        raise ValueError(f'Unexpected end of source inside escape expression, '
+            f'expected {_ESCAPE_EXPRESSION_STOPPAGE_CHARACTER!r}')
+
+_STRING_DELIMITER = "'"
 _ESCAPE_EXPRESSION_STOPPAGE_CHARACTER = ')'
-
 _CHARACTER_ESCAPES = {
     'n': CharacterEscape.NEWLINE,
     't': CharacterEscape.TAB,
 }
 
-def _tokenise_identifier(first, tail):
-    return _tokenise_characters_where(
-        first,
-        tail,
-        _is_identifier_character,
-        IdentifierToken)
+class IntegerTokeniser:
 
-def _is_identifier_character(character):
-    return 'a' <= character <= 'z'
+    def enter(self, character):
+        return self._is_integer_character(character)
 
-def _tokenise_integer(first, tail):
-    return _tokenise_characters_where(
-        first,
-        tail,
-        _is_integer_character,
-        IntegerToken)
+    def tokenise(self, head, tail):
+        return _tokenise_characters_where(
+            head,
+            tail,
+            self._is_integer_character,
+            IntegerToken)
 
-def _is_integer_character(character):
-    return '0' <= character <= '9'
+    def _is_integer_character(self, character):
+        return '0' <= character <= '9'
+
+class IdentifierTokeniser:
+
+    def enter(self, character):
+        return self._is_identifier_character(character)
+
+    def tokenise(self, head, tail):
+        return _tokenise_characters_where(
+            head,
+            tail,
+            self._is_identifier_character,
+            IdentifierToken)
+
+    def _is_identifier_character(self, character):
+        return 'a' <= character <= 'z'
+
+_TOKENISERS = [
+    StringTokeniser(),
+    IdentifierTokeniser(),
+    IntegerTokeniser(),
+]
 
 def _tokenise_characters_where(first, tail, predicate, wrapper):
     characters = [first]
