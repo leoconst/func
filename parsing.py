@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import reduce
 from typing import Iterable
 
 from tokenising import *
@@ -13,6 +14,11 @@ class BindingSyntax:
 
 class ExpressionSyntax:
     pass
+
+@dataclass
+class CallExpressionSyntax(ExpressionSyntax):
+    callable_: ExpressionSyntax
+    argument: ExpressionSyntax
 
 @dataclass
 class IdentifierExpressionSyntax(ExpressionSyntax):
@@ -29,9 +35,9 @@ class StringExpressionSyntax(ExpressionSyntax):
 def parse(source):
     token_iterable = tokenise(source)
     tokens = Tokens(token_iterable)
-    expression = _parse_binding(tokens)
+    result = _parse_binding(tokens)
     tokens.expect_end_of_source()
-    return expression
+    return result
 
 def _parse_binding(tokens):
     name = tokens.expect(IdentifierToken).name
@@ -40,6 +46,11 @@ def _parse_binding(tokens):
     return BindingSyntax(name, value)
 
 def _parse_expression(tokens):
+    first = _parse_single_expression(tokens)
+    arguments = tokens.zero_or_more(_parse_single_expression)
+    return reduce(CallExpressionSyntax, arguments, first)
+
+def _parse_single_expression(tokens):
     return tokens.branch('an expression',
         _parse_integer,
         _parse_identifier,
@@ -101,11 +112,23 @@ class Tokens:
     def branch(self, description, *branches):
         saved_position = self._position
         for branch in branches:
-            try:
-                return branch(self)
-            except ParseError:
-                self._position = saved_position
+            result = self._try(branch)
+            if result is not None:
+                return result
+            self._position = saved_position
         raise self._error(description, self._get_next())
+
+    def zero_or_more(self, parser):
+        while (result := self._try(parser)) is not None:
+            yield result
+
+    def _try(self, parser):
+        saved_position = self._position
+        try:
+            return parser(self)
+        except ParseError:
+            self._position = saved_position
+            return None
 
     def _get_next(self):
         try:
@@ -137,17 +160,18 @@ _TOKEN_TYPE_DESCRIPTIONS = {
 _END_OF_SOURCE = object()
 _END_OF_SOURCE_DESCRIPTION = 'end of source'
 
-
 def _main():
     import io
-    source = io.StringIO("greeting = 'Hello, \\(name)!'")
+    source = io.StringIO("greet = print 'Hello, \\(name)!'")
     actual = parse(source)
     expected = BindingSyntax(
-        'greeting',
-        StringExpressionSyntax([
-            'Hello, ',
-            IdentifierExpressionSyntax('name'),
-            '!']))
+        'greet',
+        CallExpressionSyntax(
+            IdentifierExpressionSyntax('print'),
+            StringExpressionSyntax([
+                'Hello, ',
+                IdentifierExpressionSyntax('name'),
+                '!'])))
     from pprint import pprint
     pprint(actual)
     assert actual == expected
