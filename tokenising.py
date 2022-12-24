@@ -106,15 +106,16 @@ class ConstantCharacterTokeniser:
 class ConstantStringTokeniser:
 
     def __init__(self, expected, token, description):
-        self._expected = expected
+        self._expected_head = expected[0]
+        self._expected_tail = expected[1:]
         self._token = token
         self._description = description
 
     def enter(self, character):
-        return character == self._expected[0]
+        return character == self._expected_head
 
     def tokenise(self, head, tail):
-        for expected in self._expected[1:]:
+        for expected in self._expected_tail:
             actual = _read_head_or_raise(tail, self._description)
             if actual != expected:
                 raise ValueError(
