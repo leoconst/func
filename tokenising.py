@@ -40,6 +40,10 @@ class ExpressionEscapeStringTokenPart(StringTokenPart):
     tokens: Iterable[Token]
 
 @dataclass
+class NewlineToken(Token):
+    pass
+
+@dataclass
 class EqualsToken(Token):
     pass
 
@@ -97,6 +101,25 @@ class ConstantCharacterTokeniser:
         return character == self._expected
 
     def tokenise(self, head, tail):
+        return self._token
+
+class ConstantStringTokeniser:
+
+    def __init__(self, expected, token, description):
+        self._expected = expected
+        self._token = token
+        self._description = description
+
+    def enter(self, character):
+        return character == self._expected[0]
+
+    def tokenise(self, head, tail):
+        for expected in self._expected[1:]:
+            actual = _read_head_or_raise(tail, self._description)
+            if actual != expected:
+                raise ValueError(
+                    f'Unexpected {actual!r} in {self._description}, '
+                    f'expected {expected!r}')
         return self._token
 
 class StringTokeniser:
@@ -187,6 +210,8 @@ class IdentifierTokeniser:
             or '0' <= character <= '9')
 
 _TOKENISERS = [
+    ConstantCharacterTokeniser('\n', NewlineToken()),
+    ConstantStringTokeniser('\r\n', NewlineToken(), 'CRLF newline'),
     ConstantCharacterTokeniser('=', EqualsToken()),
     StringTokeniser(),
     IdentifierTokeniser(),
@@ -213,7 +238,7 @@ def _read_head(source):
 def _main():
     import io
     source = io.StringIO(
-        " \t repeat 3 'Two plus three equals:\\n\\t\\(add\t2 3).'  = \t")
+        " \t repeat 3 'Two plus three equals:\\n\\t\\(add\t2 3).'  \r\n\n= \t")
     actual = list(tokenise(source))
     expected = [
         IdentifierToken('repeat'),
@@ -229,6 +254,8 @@ def _main():
             ]),
             PlainStringTokenPart('.'),
         ]),
+        NewlineToken(),
+        NewlineToken(),
         EqualsToken(),
     ]
     from pprint import pprint
