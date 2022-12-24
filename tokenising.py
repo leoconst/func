@@ -85,15 +85,19 @@ def _characters_where(source, predicate):
 
 _WHITESPACE = (' ', '\t')
 
-class EqualsTokeniser:
+class ConstantCharacterTokeniser:
 
-    @staticmethod
-    def enter(character):
-        return character == '='
+    def __init__(self, expected, token):
+        if len(expected) != 1:
+            raise ValueError('Expected a single character')
+        self._expected = expected
+        self._token = token
 
-    @staticmethod
-    def tokenise(head, tail):
-        return EqualsToken()
+    def enter(self, character):
+        return character == self._expected
+
+    def tokenise(self, head, tail):
+        return self._token
 
 class StringTokeniser:
 
@@ -183,7 +187,7 @@ class IdentifierTokeniser:
             or '0' <= character <= '9')
 
 _TOKENISERS = [
-    EqualsTokeniser,
+    ConstantCharacterTokeniser('=', EqualsToken()),
     StringTokeniser(),
     IdentifierTokeniser(),
     IntegerTokeniser(),
@@ -209,7 +213,7 @@ def _read_head(source):
 def _main():
     import io
     source = io.StringIO(
-        " \t repeat 3 'Two plus three equals:\\n\\t\\(add\t2 3).'   \t\t")
+        " \t repeat 3 'Two plus three equals:\\n\\t\\(add\t2 3).'  = \t")
     actual = list(tokenise(source))
     expected = [
         IdentifierToken('repeat'),
@@ -225,6 +229,7 @@ def _main():
             ]),
             PlainStringTokenPart('.'),
         ]),
+        EqualsToken(),
     ]
     from pprint import pprint
     pprint(actual)
