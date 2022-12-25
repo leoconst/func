@@ -8,6 +8,10 @@ from tokenising import *
 
 
 @dataclass
+class ModuleSyntax:
+    bindings: list[BindingSyntax]
+
+@dataclass
 class BindingSyntax:
     name: str
     value: ExpressionSyntax
@@ -35,9 +39,15 @@ class StringExpressionSyntax(ExpressionSyntax):
 def parse(source):
     token_iterable = tokenise(source)
     tokens = Tokens(token_iterable)
-    result = _parse_binding(tokens)
+    result = _parse_module(tokens)
     tokens.expect_end_of_source()
     return result
+
+def _parse_module(tokens):
+    bindings = tokens.separated(
+        lambda tokens: tokens.expect(NewlineToken),
+        _parse_binding)
+    return ModuleSyntax(list(bindings))
 
 def _parse_binding(tokens):
     name = tokens.expect(IdentifierToken).name
@@ -120,6 +130,16 @@ class Tokens:
         while (result := self._try(parser)) is not None:
             yield result
 
+    def separated(self, separator, item):
+        first = self._try(item)
+        if first is None:
+            return
+        yield first
+        def parse_tail(tokens):
+            separator(tokens)
+            return item(tokens)
+        yield from self.zero_or_more(parse_tail)
+
     def _try(self, parser):
         saved_position = self._position
         try:
@@ -153,23 +173,35 @@ _TOKEN_TYPE_DESCRIPTIONS = {
     IntegerToken: 'an integer',
     IdentifierToken: 'an identifier',
     StringToken: 'a string',
-    EqualsToken: 'an equals symbol'
+    EqualsToken: 'an equals symbol',
+    NewlineToken: 'a newline',
 }
 _END_OF_SOURCE = object()
 _END_OF_SOURCE_DESCRIPTION = 'end of source'
 
 def _main():
     import io
-    source = io.StringIO("greet = print 'Hello, \\(name)!'")
+    source = io.StringIO("name = 'World'\ngreet = print 'Hello, \\(name)!'")
     actual = parse(source)
-    expected = BindingSyntax(
-        'greet',
-        CallExpressionSyntax(
-            IdentifierExpressionSyntax('print'),
+    expected = ModuleSyntax([
+        BindingSyntax(
+            'name',
             StringExpressionSyntax([
-                'Hello, ',
-                IdentifierExpressionSyntax('name'),
-                '!'])))
+                'World',
+            ])
+        ),
+        BindingSyntax(
+            'greet',
+            CallExpressionSyntax(
+                IdentifierExpressionSyntax('print'),
+                StringExpressionSyntax([
+                    'Hello, ',
+                    IdentifierExpressionSyntax('name'),
+                    '!',
+                ])
+            )
+        ),
+    ])
     from pprint import pprint
     pprint(actual)
     assert actual == expected
