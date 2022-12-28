@@ -12,7 +12,8 @@ def _tokenise_with_position(source, position):
     while True:
         for kind, value, end in _get_raw_tokens(source):
             if kind == _RawTokenKind.STRING_DELIMITER:
-                string_token, source = _tokenise_string(source[end:])
+                string_tokeniser = _StringTokeniser(source[end:])
+                string_token, source = string_tokeniser.tokenise()
                 position.tail = source
                 yield string_token
                 break
@@ -86,58 +87,78 @@ _RAW_TOKEN_RE = re.compile(
     r'|'.join(rf'(?P<{raw_token_kind.name}>{raw_token_kind.value})'
         for raw_token_kind in _RawTokenKind), re.DOTALL)
 
-def _tokenise_string(source):
-    parts, source = _tokenise_string_parts(source)
-    return (StringToken(parts), source)
+class _StringTokeniser:
 
-def _tokenise_string_parts(source):
-    plain_characters = []
-    parts = []
-    def maybe_commit_plain_token():
-        if plain_characters:
-            plain_string = ''.join(plain_characters)
-            parts.append(plain_string)
-            plain_characters.clear()
-    while True:
-        head, source = _split_head(source, 'string')
-        if head == _STRING_DELIMETER:
-            maybe_commit_plain_token()
-            return (parts, source)
-        if head == '\\':
-            head, source = _split_head(source, 'string escape')
-            if head == '(':
-                maybe_commit_plain_token()
-                tokens, source = _tokenise_expression_escape(source)
-                parts.append(tokens)
-            elif head in _CHARACTER_ESCAPES:
-                plain_characters.append(_CHARACTER_ESCAPES[head])
+    def __init__(self, source):
+        self._source = source
+        self._plain_characters = []
+        self._parts = []
+
+    def tokenise(self):
+        while True:
+            head = self._split_head('inside string')
+            if head == _STRING_DELIMETER:
+                return self._complete_token()
+            if head == '\\':
+                self._tokenise_escape()
             else:
-                raise ValueError(f'Invalid escape character: {head!r}')
+                self._add_plain_character(head)
+
+    def _complete_token(self):
+        self._add_plain_part_if_any()
+        string_token = StringToken(self._parts)
+        return (string_token, self._source)
+
+    def _tokenise_escape(self):
+        head = self._split_head('immediately after string escape')
+        if head == '(':
+            self._add_expression_escape_tokens_part()
+        elif head in _CHARACTER_ESCAPES:
+            self._add_escaped_character(head)
         else:
-            plain_characters.append(head)
+            raise TokeniseError(f'Invalid escape character: {head!r}')
+
+    def _add_expression_escape_tokens_part(self):
+        self._add_plain_part_if_any()
+        source = self._source
+        tokens = []
+        position = _PositionContext(source)
+        for token in _tokenise_with_position(source, position):
+            if token.kind == TokenKind.CLOSE_BRACKET:
+                break
+            tokens.append(token)
+        else:
+            raise self._end_of_source_error('inside escape expression')
+        self._source = position.tail
+        self._parts.append(tokens)
+
+    def _add_escaped_character(self, character):
+        escaped_character = _CHARACTER_ESCAPES[character]
+        self._add_plain_character(escaped_character)
+
+    def _add_plain_character(self, character):
+        self._plain_characters.append(character)
+
+    def _add_plain_part_if_any(self):
+        plain_string = ''.join(self._plain_characters)
+        self._parts.append(plain_string)
+        self._plain_characters.clear()
+
+    def _split_head(self, location):
+        source = self._source
+        if not source:
+            raise self._end_of_source_error(location)
+        self._source = source[1:]
+        return source[0]
+
+    def _end_of_source_error(self, location):
+        return TokeniseError(f'Unexpected end of source {location}')
 
 _CHARACTER_ESCAPES = {
     'n': '\n',
     't': '\t',
     '\'': '\'',
 }
-
-def _tokenise_expression_escape(source):
-    tokens = []
-    position = _PositionContext(source)
-    for token in _tokenise_with_position(source, position):
-        if token.kind == TokenKind.CLOSE_BRACKET:
-            break
-        tokens.append(token)
-    else:
-        raise TokeniseError(
-            'Unexpected end of string while parsing escape expression')
-    return (tokens, position.tail)
-
-def _split_head(source, location):
-    if not source:
-        raise TokeniseError(f'Unexpected end of source inside {location}')
-    return (source[0], source[1:])
 
 
 def _main():
