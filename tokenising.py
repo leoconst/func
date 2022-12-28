@@ -99,25 +99,22 @@ def _tokenise_string_contents(source):
             contents.append(plain_string)
             plain_characters.clear()
     while True:
-        head_and_tail = _read_head_or_raise(source, 'string')
-        head, source = head_and_tail
+        head, source = _split_head(source, 'string')
         if head == _STRING_DELIMETER:
             maybe_commit_plain_token()
             return (contents, source)
         if head == '\\':
-            maybe_commit_plain_token()
-            escaped, source = _tokenise_escape(source)
-            contents.append(escaped)
+            head, source = _split_head(source, 'string escape')
+            if head == '(':
+                maybe_commit_plain_token()
+                tokens, source = _tokenise_expression_escape(source)
+                contents.append(tokens)
+            elif head in _CHARACTER_ESCAPES:
+                plain_characters.append(_CHARACTER_ESCAPES[head])
+            else:
+                raise ValueError(f'Invalid escape character: {head!r}')
         else:
             plain_characters.append(head)
-
-def _tokenise_escape(source):
-    head, source = _read_head_or_raise(source, 'string escape')
-    if head == '(':
-        return _tokenise_expression_escape(source)
-    if head in _CHARACTER_ESCAPES:
-        return (_CHARACTER_ESCAPES[head], source)
-    raise ValueError(f'Invalid escape character: {head!r}')
 
 _CHARACTER_ESCAPES = {
     'n': '\n',
@@ -137,31 +134,21 @@ def _tokenise_expression_escape(source):
             'Unexpected end of string while parsing escape expression')
     return (tokens, position.tail)
 
-def _read_head_or_raise(source, location):
-    head_and_tail = _read_head(source)
-    if head_and_tail is None:
-        raise TokeniseError(f'Unexpected end of source inside {location}')
-    return head_and_tail
-
-def _read_head(source):
+def _split_head(source, location):
     if not source:
-        return None
+        raise TokeniseError(f'Unexpected end of source inside {location}')
     return (source[0], source[1:])
 
 
 def _main():
-    source = " \t repeat 3 '\\'Two plus three\\' equals:\\n\\t\\(add\t2 '3').'  \r\n\n= \t"
+    source = (" \t repeat 3 '\\'Two plus three\\' equals:"
+        "\\n\\t\\(add\t2 '3').'  \r\n\n= \t")
     actual = list(tokenise(source))
     expected = [
         PlainToken(TokenKind.IDENTIFIER, 'repeat'),
         PlainToken(TokenKind.INTEGER, '3'),
         StringToken([
-            '\'',
-            'Two plus three',
-            '\'',
-            ' equals:',
-            '\n',
-            '\t',
+            '\'Two plus three\' equals:\n\t',
             [
                 PlainToken(TokenKind.IDENTIFIER, 'add'),
                 PlainToken(TokenKind.INTEGER, '2'),
