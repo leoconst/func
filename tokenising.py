@@ -60,7 +60,7 @@ class TokenKind(Enum):
 @dataclass
 class StringToken(Token):
     kind = TokenKind.STRING
-    contents: list[str|list[Token]]
+    parts: list[str|list[Token]]
 
 class TokeniseError(Exception):
     pass
@@ -87,28 +87,28 @@ _RAW_TOKEN_RE = re.compile(
         for raw_token_kind in _RawTokenKind), re.DOTALL)
 
 def _tokenise_string(source):
-    contents, source = _tokenise_string_contents(source)
-    return (StringToken(contents), source)
+    parts, source = _tokenise_string_parts(source)
+    return (StringToken(parts), source)
 
-def _tokenise_string_contents(source):
+def _tokenise_string_parts(source):
     plain_characters = []
-    contents = []
+    parts = []
     def maybe_commit_plain_token():
         if plain_characters:
             plain_string = ''.join(plain_characters)
-            contents.append(plain_string)
+            parts.append(plain_string)
             plain_characters.clear()
     while True:
         head, source = _split_head(source, 'string')
         if head == _STRING_DELIMETER:
             maybe_commit_plain_token()
-            return (contents, source)
+            return (parts, source)
         if head == '\\':
             head, source = _split_head(source, 'string escape')
             if head == '(':
                 maybe_commit_plain_token()
                 tokens, source = _tokenise_expression_escape(source)
-                contents.append(tokens)
+                parts.append(tokens)
             elif head in _CHARACTER_ESCAPES:
                 plain_characters.append(_CHARACTER_ESCAPES[head])
             else:
