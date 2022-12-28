@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import reduce
-from typing import Iterable
 
 from tokenising import *
 
@@ -34,7 +33,7 @@ class IntegerExpressionSyntax(ExpressionSyntax):
 
 @dataclass
 class StringExpressionSyntax(ExpressionSyntax):
-    parts: Iterable[str|ExpressionSyntax]
+    parts: list[str|ExpressionSyntax]
 
 def parse(source):
     token_iterable = tokenise(source)
@@ -72,42 +71,21 @@ def _parse_integer(tokens):
 
 def _parse_identifier(tokens):
     identifier_token = tokens.expect(TokenKind.IDENTIFIER)
-    return IdentifierExpressionSyntax(identifier_token.name)
+    return IdentifierExpressionSyntax(identifier_token.value)
  
 def _parse_string(tokens):
-    tokens.expect(TokenKind.STRING_START)
-    print(tokens._tokens)
-    parts = list(tokens.zero_or_more(_parse_string_part))
-    print(tokens._tokens)
-    final_part = tokens.expect(TokenKind.STRING_END).value[:-1]
-    parts.append(final_part)
+    string = tokens.expect(TokenKind.STRING)
+    parts = list(map(_parse_string_part, string.contents))
     return StringExpressionSyntax(parts)
 
-def _parse_string_part(tokens):
-    return tokens.branch('the contents of a string',
-        lambda tokens: tokens.expect(TokenKind.STRING_CONTENTS).value,
-        _parse_string_escape)
-
-def _parse_string_escape(tokens):
-    tokens.expect(TokenKind.STRING_ESCAPE)
-    return tokens.branch('a string escape',
-        _parse_string_escape_character,
-        _parse_string_escape)
-
-def _parse_string_escape_character(tokens):
-    escape_character = tokens.expect(TokenKind.STRING_ESCAPE_CHARACTER).value
-    return _ESCAPE_CHARACTERS[escape_character]
-
-_ESCAPE_CHARACTERS = {
-    'n': '\n',
-    't': '\t',
-}
-
-def _parse_string_escape_expression(tokens):
-    tokens.expect(TokenKind.OPEN_BRACKET)
-    expression = _parse_expression(tokens)
-    tokens.expect(TokenKind.CLOSE_BRACKET)
-    return expression
+def _parse_string_part(part):
+    match part:
+        case str() as string:
+            return string
+        case list() as tokens:
+            return _parse_expression(Tokens(tokens))
+        case _:
+            raise TypeError(f'Unknown string part: {part}')
 
 class ParseError(Exception):
     pass
@@ -121,7 +99,8 @@ class Tokens:
 
     def expect(self, token_kind):
         return self._expect(
-            lambda token: token.kind == token_kind,
+            lambda token: (token is not _END_OF_SOURCE
+                and token.kind == token_kind),
             lambda: self._describe_token_kind(token_kind))
 
     def expect_end_of_source(self):
@@ -180,19 +159,15 @@ class Tokens:
     def _describe_token(self, token):
         if token is _END_OF_SOURCE:
             return _END_OF_SOURCE_DESCRIPTION
-        return f'{self._describe_token_kind(token.kind)} ({token.value!r})'
+        return f'{self._describe_token_kind(token.kind)}'
 
     def _describe_token_kind(self, token_kind):
         return _TOKEN_KIND_DESCRIPTIONS[token_kind]
 
 _TOKEN_KIND_DESCRIPTIONS = {
+    TokenKind.STRING: 'a string',
     TokenKind.INTEGER: 'an integer',
     TokenKind.IDENTIFIER: 'an identifier',
-    TokenKind.STRING_START: 'the start of a string',
-    TokenKind.STRING_CONTENTS: 'the middle of a string',
-    TokenKind.STRING_ESCAPE: 'a string escape',
-    TokenKind.STRING_ESCAPE_CHARACTER: 'a string escape character',
-    TokenKind.STRING_END: 'the end of a string',
     TokenKind.EQUALS: 'an equals symbol',
     TokenKind.NEWLINE: 'a newline',
 }
@@ -201,30 +176,29 @@ _END_OF_SOURCE_DESCRIPTION = 'end of source'
 
 def _main():
     source = "name = 'World'\ngreet = print 'Hello, \\(name)!'"
-    # actual = parse(source)
-    # expected = ModuleSyntax([
-    #     BindingSyntax(
-    #         'name',
-    #         StringExpressionSyntax([
-    #             'World',
-    #         ])
-    #     ),
-    #     BindingSyntax(
-    #         'greet',
-    #         CallExpressionSyntax(
-    #             IdentifierExpressionSyntax('print'),
-    #             StringExpressionSyntax([
-    #                 'Hello, ',
-    #                 IdentifierExpressionSyntax('name'),
-    #                 '!',
-    #             ])
-    #         )
-    #     ),
-    # ])
+    actual = parse(source)
+    expected = ModuleSyntax([
+        BindingSyntax(
+            'name',
+            StringExpressionSyntax([
+                'World',
+            ])
+        ),
+        BindingSyntax(
+            'greet',
+            CallExpressionSyntax(
+                IdentifierExpressionSyntax('print'),
+                StringExpressionSyntax([
+                    'Hello, ',
+                    IdentifierExpressionSyntax('name'),
+                    '!',
+                ])
+            )
+        ),
+    ])
     from pprint import pprint
-    pprint(list(tokenise(source)))
-    # pprint(actual)
-    # assert actual == expected
+    pprint(actual)
+    assert actual == expected
 
 if __name__ == '__main__':
     _main()
