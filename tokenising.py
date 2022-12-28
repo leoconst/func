@@ -1,266 +1,98 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Iterable
 
 
-class Token:
-    pass
-
-@dataclass
-class IdentifierToken(Token):
-    name: str
-
-@dataclass
-class IntegerToken(Token):
-    digits: str
-
-@dataclass
-class StringToken(Token):
-    parts: Iterable[StringTokenPart]
-
-class StringTokenPart:
-    pass
-
-@dataclass
-class PlainStringTokenPart(StringTokenPart):
-    contents: str
-
-@dataclass
-class CharacterEscapeStringTokenPart(StringTokenPart):
-    escape: CharacterEscape
-
-class CharacterEscape(Enum):
-    NEWLINE = auto()
-    TAB = auto()
-
-@dataclass
-class ExpressionEscapeStringTokenPart(StringTokenPart):
-    tokens: Iterable[Token]
-
-@dataclass
-class NewlineToken(Token):
-    pass
-
-@dataclass
-class EqualsToken(Token):
+class TokeniseError(Exception):
     pass
 
 def tokenise(source):
-    yield from _tokenise_until(source, on_end_of_source=lambda: None)
-    remainder = source.read() 
-    if remainder:
-        raise ValueError(f'Untokenised tail: {remainder!r}')
+    for raw_kind, value in _get_raw_tokens(source):
+        kind = _token_kind(raw_kind, value)
+        if kind is not None:
+            yield Token(kind, value)
 
-def _tokenise_until(source, *, on_end_of_source, stoppage_character=None):
-    while ((token := _next_token(source, on_end_of_source, stoppage_character))
-            is not None):
-        yield token
+def _get_raw_tokens(source):
+    for match in _RAW_TOKEN_RE.finditer(source):
+        kind = _RawTokenKind[match.lastgroup]
+        value = match.group()
+        yield (kind, value)
 
-def _next_token(source, on_end_of_source, stoppage_character):
-    source = _skip_ignored(source)
-    head = _read_head(source)
-    if head is None:
-        return on_end_of_source()
-    for tokeniser in _TOKENISERS:
-        if tokeniser.enter(head):
-            return tokeniser.tokenise(head, source)
-    if head == stoppage_character:
-        return None
-    raise ValueError(f'Invalid character: {head!r}')
+def _token_kind(raw_kind, value):
+    match raw_kind:
+        case _RawTokenKind.MISMATCH:
+            raise TokeniseError(f'Unexpected character: {value!r}')
+        case _RawTokenKind.IGNORED:
+            return
+        case other:
+            return TokenKind[other.name]
 
-def _skip_ignored(source):
-    _characters_where(source, lambda character: character in _WHITESPACE)
-    return source
+class TokenKind(Enum):
+    STRING_START = auto()
+    STRING_CONTENTS = auto()
+    STRING_ESCAPE = auto()
+    STRING_ESCAPE_CHARACTER = auto()
+    STRING_END = auto()
+    IDENTIFIER = auto()
+    INTEGER = auto()
+    EQUALS = auto()
+    NEWLINE = auto()
+    OPEN_BRACKET = auto()
+    CLOSE_BRACKET = auto()
 
-def _characters_where(source, predicate):
-    characters = []
-    while True:
-        position = source.tell()
-        character = _read_head(source)
-        if character is None:
-            break
-        if not predicate(character):
-            source.seek(position)
-            break
-        characters.append(character)
-    return ''.join(characters)
+class _RawTokenKind(Enum):
+    STRING_START = r'\''
+    STRING_CONTENTS = r'(?<=[\'\)])[^\'\\]+(?=[\\])'
+    STRING_ESCAPE = r'\\'
+    STRING_ESCAPE_CHARACTER = r'(?<=\\)[nt]'
+    IDENTIFIER = r'[A-Za-z_][A-Za-z0-9_]*'
+    INTEGER = r'[0-9]+'
+    EQUALS = r'='
+    NEWLINE = r'\n|\r\n'
+    OPEN_BRACKET = r'\('
+    CLOSE_BRACKET = r'\)'
+    IGNORED = r'[ \t]+'
+    STRING_END = r'(?<=[\'\)])[^\'\\]*\''
+    MISMATCH = r'.'
 
-_WHITESPACE = (' ', '\t')
+_RAW_TOKEN_RE = re.compile(
+    r'|'.join(rf'(?P<{raw_token_kind.name}>{raw_token_kind.value})'
+        for raw_token_kind in _RawTokenKind), re.DOTALL)
 
-class ConstantCharacterTokeniser:
-
-    def __init__(self, expected, token):
-        if len(expected) != 1:
-            raise ValueError('Expected a single character')
-        self._expected = expected
-        self._token = token
-
-    def enter(self, character):
-        return character == self._expected
-
-    def tokenise(self, head, tail):
-        return self._token
-
-class ConstantStringTokeniser:
-
-    def __init__(self, expected, token, description):
-        self._expected_head = expected[0]
-        self._expected_tail = expected[1:]
-        self._token = token
-        self._description = description
-
-    def enter(self, character):
-        return character == self._expected_head
-
-    def tokenise(self, head, tail):
-        for expected in self._expected_tail:
-            actual = _read_head_or_raise(tail, self._description)
-            if actual != expected:
-                raise ValueError(
-                    f'Unexpected {actual!r} in {self._description}, '
-                    f'expected {expected!r}')
-        return self._token
-
-class StringTokeniser:
-
-    def enter(self, character):
-        return character == _STRING_DELIMITER
-
-    def tokenise(self, head, tail):
-        parts = list(self._tokenise_parts(tail))
-        return StringToken(parts)
-
-    def _tokenise_parts(self, source):
-        plain_characters = []
-        def zero_or_one_plain_token():
-            if plain_characters:
-                plain_string = ''.join(plain_characters)
-                yield PlainStringTokenPart(plain_string)
-                plain_characters.clear()
-        while True:
-            head = _read_head_or_raise(source, 'string')
-            if head == _STRING_DELIMITER:
-                yield from zero_or_one_plain_token()
-                return
-            if head == '\\':
-                yield from zero_or_one_plain_token()
-                yield self._tokenise_escape(source)
-            else:
-                plain_characters.append(head)
-
-    def _tokenise_escape(self, source):
-        head = _read_head_or_raise(source, 'string escape')
-        if head == '(':
-            tokens = _tokenise_until(
-                source,
-                on_end_of_source=self._throw_for_end_of_source,
-                stoppage_character=_ESCAPE_EXPRESSION_STOPPAGE_CHARACTER)
-            token_list = list(tokens)
-            return ExpressionEscapeStringTokenPart(token_list)
-        if head in _CHARACTER_ESCAPES:
-            return CharacterEscapeStringTokenPart(_CHARACTER_ESCAPES[head])
-        raise ValueError(f'Invalid escape character: {head!r}')
-
-    def _throw_for_end_of_source(self):
-        raise ValueError('Unexpected end of source inside escape expression, '
-            f'expected {_ESCAPE_EXPRESSION_STOPPAGE_CHARACTER!r}')
-
-_STRING_DELIMITER = "'"
-_ESCAPE_EXPRESSION_STOPPAGE_CHARACTER = ')'
-_CHARACTER_ESCAPES = {
-    'n': CharacterEscape.NEWLINE,
-    't': CharacterEscape.TAB,
-}
-
-class IntegerTokeniser:
-
-    def enter(self, character):
-        return self._is_integer_character(character)
-
-    def tokenise(self, head, tail):
-        return _tokenise_characters_where(
-            head,
-            tail,
-            self._is_integer_character,
-            IntegerToken)
-
-    def _is_integer_character(self, character):
-        return '0' <= character <= '9'
-
-class IdentifierTokeniser:
-
-    def enter(self, character):
-        return self._is_letter_or_underscore(character)
-
-    def tokenise(self, head, tail):
-        return _tokenise_characters_where(
-            head,
-            tail,
-            self._is_letter_or_underscore,
-            IdentifierToken)
-
-    def _is_letter_or_underscore(self, character):
-        return ('a' <= character <= 'z'
-            or 'A' <= character <= 'Z'
-            or character == '_')
-
-    def _is_identifier_tail_character(self, character):
-        return (self._is_letter_or_underscore(character)
-            or '0' <= character <= '9')
-
-_TOKENISERS = [
-    ConstantCharacterTokeniser('\n', NewlineToken()),
-    ConstantStringTokeniser('\r\n', NewlineToken(), 'CRLF newline'),
-    ConstantCharacterTokeniser('=', EqualsToken()),
-    StringTokeniser(),
-    IdentifierTokeniser(),
-    IntegerTokeniser(),
-]
-
-def _tokenise_characters_where(first, tail, predicate, wrapper):
-    characters = first + _characters_where(tail, predicate)
-    return wrapper(''.join(characters))
-
-def _read_head_or_raise(source, location):
-    head = _read_head(source)
-    if head is None:
-        raise ValueError(f'Unexpected end of source inside {location}')
-    return head
-
-def _read_head(source):
-    head = source.read(1)
-    if not head:
-        return None
-    return head
+@dataclass
+class Token:
+    kind: TokenKind
+    value: str
 
 
 def _main():
-    import io
-    source = io.StringIO(
-        " \t repeat 3 'Two plus three equals:\\n\\t\\(add\t2 3).'  \r\n\n= \t")
+    source = " \t repeat 3 'Two plus three equals:\\n\\t\\(add\t2 3).'  \r\n\n= \t"
     actual = list(tokenise(source))
     expected = [
-        IdentifierToken('repeat'),
-        IntegerToken('3'),
-        StringToken([
-            PlainStringTokenPart('Two plus three equals:'),
-            CharacterEscapeStringTokenPart(CharacterEscape.NEWLINE),
-            CharacterEscapeStringTokenPart(CharacterEscape.TAB),
-            ExpressionEscapeStringTokenPart([
-                IdentifierToken('add'),
-                IntegerToken('2'),
-                IntegerToken('3'),
-            ]),
-            PlainStringTokenPart('.'),
-        ]),
-        NewlineToken(),
-        NewlineToken(),
-        EqualsToken(),
+        Token(TokenKind.IDENTIFIER, 'repeat'),
+        Token(TokenKind.INTEGER, '3'),
+        Token(TokenKind.STRING_START, '\''),
+        Token(TokenKind.STRING_CONTENTS, 'Two plus three equals:'),
+        Token(TokenKind.STRING_ESCAPE, '\\'),
+        Token(TokenKind.STRING_ESCAPE_CHARACTER, 'n'),
+        Token(TokenKind.STRING_ESCAPE, '\\'),
+        Token(TokenKind.STRING_ESCAPE_CHARACTER, 't'),
+        Token(TokenKind.STRING_ESCAPE, '\\'),
+        Token(TokenKind.OPEN_BRACKET, '('),
+        Token(TokenKind.IDENTIFIER, 'add'),
+        Token(TokenKind.INTEGER, '2'),
+        Token(TokenKind.INTEGER, '3'),
+        Token(TokenKind.CLOSE_BRACKET, ')'),
+        Token(TokenKind.STRING_END, '.\''),
+        Token(TokenKind.NEWLINE, '\r\n'),
+        Token(TokenKind.NEWLINE, '\n'),
+        Token(TokenKind.EQUALS, '='),
     ]
     from pprint import pprint
-    pprint(actual)
+    pprint(list(zip(actual, expected)))
     assert actual == expected
 
 if __name__ == '__main__':
