@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from enum import Enum, auto
+from io import StringIO
 
 
 def tokenise(source):
@@ -90,13 +91,13 @@ _RAW_TOKEN_RE = re.compile(
 class _StringTokeniser:
 
     def __init__(self, source):
-        self._source = source
+        self._source = StringIO(source)
         self._plain_characters = []
         self._parts = []
 
     def tokenise(self):
         while True:
-            head = self._split_head('inside string')
+            head = self._read_head('inside string')
             if head == _STRING_DELIMETER:
                 return self._complete_token()
             if head == '\\':
@@ -107,10 +108,11 @@ class _StringTokeniser:
     def _complete_token(self):
         self._add_plain_part_if_any()
         string_token = StringToken(self._parts)
-        return (string_token, self._source)
+        source = self._read_all()
+        return (string_token, source)
 
     def _tokenise_escape(self):
-        head = self._split_head('immediately after string escape')
+        head = self._read_head('immediately after string escape')
         if head == '(':
             self._add_expression_escape_tokens_part()
         elif head in _CHARACTER_ESCAPES:
@@ -120,7 +122,7 @@ class _StringTokeniser:
 
     def _add_expression_escape_tokens_part(self):
         self._add_plain_part_if_any()
-        source = self._source
+        source = self._read_all()
         tokens = []
         position = _PositionContext(source)
         for token in _tokenise_with_position(source, position):
@@ -129,7 +131,7 @@ class _StringTokeniser:
             tokens.append(token)
         else:
             raise self._end_of_source_error('inside escape expression')
-        self._source = position.tail
+        self._source = StringIO(position.tail)
         self._parts.append(tokens)
 
     def _add_escaped_character(self, character):
@@ -144,12 +146,14 @@ class _StringTokeniser:
         self._parts.append(plain_string)
         self._plain_characters.clear()
 
-    def _split_head(self, location):
-        source = self._source
-        if not source:
+    def _read_head(self, location):
+        head = self._source.read(1)
+        if not head:
             raise self._end_of_source_error(location)
-        self._source = source[1:]
-        return source[0]
+        return head
+
+    def _read_all(self):
+        return self._source.read()
 
     def _end_of_source_error(self, location):
         return TokeniseError(f'Unexpected end of source {location}')
