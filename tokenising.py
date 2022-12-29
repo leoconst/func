@@ -10,21 +10,18 @@ def tokenise(source):
     return _tokenise_with_position(source, _PositionContext(source))
 
 def _tokenise_with_position(source, position):
-    while True:
-        for kind, value, end in _get_raw_tokens(source):
-            if kind == _RawTokenKind.STRING_DELIMITER:
-                string_tokeniser = _StringTokeniser(source[end:])
-                string_token, source = string_tokeniser.tokenise()
-                position.tail = source
-                yield string_token
-                break
-            plain_token = _plain_token_from_raw(kind, value)
-            if plain_token is not None:
-                position.tail = source[end:]
-                yield plain_token
-        else:
-            # There are no more tokens
+    for kind, value, end in _get_raw_tokens(source):
+        if kind == _RawTokenKind.STRING_DELIMITER:
+            string_tokeniser = _StringTokeniser(source[end:])
+            string_token, source = string_tokeniser.tokenise()
+            position.tail = source
+            yield string_token
+            yield from _tokenise_with_position(source, position)
             return
+        plain_token = _plain_token_from_raw(kind, value)
+        if plain_token is not None:
+            position.tail = source[end:]
+            yield plain_token
 
 def _get_raw_tokens(source):
     for match in _RAW_TOKEN_RE.finditer(source):
