@@ -7,20 +7,20 @@ from io import StringIO
 
 
 def tokenise(source):
-    return _tokenise_with_position(source, _PositionContext(source))
+    return _tokenise_with_context(source, _Context(source))
 
-def _tokenise_with_position(source, position):
+def _tokenise_with_context(source, context):
     for kind, value, end in _get_raw_tokens(source):
         if kind == _RawTokenKind.STRING_DELIMITER:
             string_tokeniser = _StringTokeniser(source[end:])
             string_token, source = string_tokeniser.tokenise()
-            position.tail = source
+            context.tail = source
             yield string_token
-            yield from _tokenise_with_position(source, position)
+            yield from _tokenise_with_context(source, context)
             return
         plain_token = _plain_token_from_raw(kind, value)
         if plain_token is not None:
-            position.tail = source[end:]
+            context.tail = source[end:]
             yield plain_token
 
 def _get_raw_tokens(source):
@@ -65,7 +65,7 @@ class TokeniseError(Exception):
     pass
 
 @dataclass
-class _PositionContext:
+class _Context:
     tail: str
 
 _STRING_DELIMETER = '\''
@@ -121,14 +121,14 @@ class _StringTokeniser:
         self._add_plain_part_if_any()
         source = self._read_all()
         tokens = []
-        position = _PositionContext(source)
-        for token in _tokenise_with_position(source, position):
+        context = _Context(source)
+        for token in _tokenise_with_context(source, context):
             if token.kind == TokenKind.CLOSE_BRACKET:
                 break
             tokens.append(token)
         else:
             raise self._end_of_source_error('inside escape expression')
-        self._source = StringIO(position.tail)
+        self._source = StringIO(context.tail)
         self._parts.append(tokens)
 
     def _add_escaped_character(self, character):
@@ -152,7 +152,8 @@ class _StringTokeniser:
     def _read_all(self):
         return self._source.read()
 
-    def _end_of_source_error(self, location):
+    @staticmethod
+    def _end_of_source_error(location):
         return TokeniseError(f'Unexpected end of source {location}')
 
 _CHARACTER_ESCAPES = {
