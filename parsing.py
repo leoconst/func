@@ -66,12 +66,12 @@ def _parse_single_expression(tokens):
         _parse_string)
 
 def _parse_integer(tokens):
-    integer_token = tokens.expect(TokenKind.INTEGER)
-    return IntegerExpressionSyntax(integer_token.value)
+    integer = tokens.expect(TokenKind.INTEGER)
+    return IntegerExpressionSyntax(integer.value)
 
 def _parse_identifier(tokens):
-    identifier_token = tokens.expect(TokenKind.IDENTIFIER)
-    return IdentifierExpressionSyntax(identifier_token.value)
+    identifier = tokens.expect(TokenKind.IDENTIFIER)
+    return IdentifierExpressionSyntax(identifier.value)
  
 def _parse_string(tokens):
     string = tokens.expect(TokenKind.STRING)
