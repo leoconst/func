@@ -75,7 +75,7 @@ def _parse_identifier(tokens):
  
 def _parse_string(tokens):
     string = tokens.expect(TokenKind.STRING)
-    parts = list(map(_parse_string_part, string.contents))
+    parts = list(map(_parse_string_part, string.parts))
     return StringExpressionSyntax(parts)
 
 def _parse_string_part(part):
