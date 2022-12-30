@@ -11,7 +11,11 @@ def tokenise(source):
 
 def _tokenise_with_context(source, context):
     for kind, value, end in _get_raw_tokens(source):
-        if kind == _RawTokenKind.STRING_DELIMITER:
+        if kind == _RawTokenKind.OPEN_BRACKET:
+            context.bracket_depth += 1
+        elif kind == _RawTokenKind.CLOSE_BRACKET:
+            context.bracket_depth -= 1
+        elif kind == _RawTokenKind.STRING_DELIMITER:
             string_tokeniser = _StringTokeniser(source[end:])
             string_token, source = string_tokeniser.tokenise()
             context.tail = source
@@ -67,6 +71,7 @@ class TokeniseError(Exception):
 @dataclass
 class _Context:
     tail: str
+    bracket_depth: int = 0
 
 _STRING_DELIMETER = '\''
 
@@ -123,7 +128,7 @@ class _StringTokeniser:
         tokens = []
         context = _Context(source)
         for token in _tokenise_with_context(source, context):
-            if token.kind == TokenKind.CLOSE_BRACKET:
+            if context.bracket_depth < 0:
                 break
             tokens.append(token)
         else:
