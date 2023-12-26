@@ -120,9 +120,9 @@ class _StringTokeniser:
         self._add_plain_part_if_any()
         source = self._read_all()
         tokens = []
-        context = _Context()
+        context = _Context(bracket_depth=1)
         for token, tail in _tokenise_with_context(source, context):
-            if context.bracket_depth < 0:
+            if context.bracket_depth <= 0:
                 break
             tokens.append(token)
         else:
