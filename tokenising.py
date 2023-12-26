@@ -7,7 +7,8 @@ from io import StringIO
 
 
 def tokenise(source):
-    return _tokenise_with_context(source, _Context(source))
+    tokens = _tokenise_with_context(source, _Context())
+    return (token for token, tail in tokens)
 
 def _tokenise_with_context(source, context):
     for raw_kind, value, end in _get_raw_tokens(source):
@@ -19,17 +20,16 @@ def _tokenise_with_context(source, context):
             case _RawTokenKind.STRING_DELIMITER:
                 string_tokeniser = _StringTokeniser(source[end:])
                 string_token, source = string_tokeniser.tokenise()
-                context.tail = source
-                yield string_token
+                yield (string_token, source)
                 yield from _tokenise_with_context(source, context)
                 return
             case _RawTokenKind.OPEN_BRACKET:
                 context.bracket_depth += 1
             case _RawTokenKind.CLOSE_BRACKET:
                 context.bracket_depth -= 1
-        context.tail = source[end:]
         kind = TokenKind[raw_kind.name]
-        yield PlainToken(kind, value)
+        tail = source[end:]
+        yield (PlainToken(kind, value), tail)
 
 def _get_raw_tokens(source):
     for match in _RAW_TOKEN_RE.finditer(source):
@@ -65,7 +65,6 @@ class TokeniseError(Exception):
 
 @dataclass
 class _Context:
-    tail: str
     bracket_depth: int = 0
 
 _STRING_DELIMETER = '\''
@@ -121,14 +120,14 @@ class _StringTokeniser:
         self._add_plain_part_if_any()
         source = self._read_all()
         tokens = []
-        context = _Context(source)
-        for token in _tokenise_with_context(source, context):
+        context = _Context()
+        for token, tail in _tokenise_with_context(source, context):
             if context.bracket_depth < 0:
                 break
             tokens.append(token)
         else:
             raise self._end_of_source_error('inside escape expression')
-        self._source = StringIO(context.tail)
+        self._source = StringIO(tail)
         self._parts.append(tokens)
 
     def _add_escaped_character(self, character):
