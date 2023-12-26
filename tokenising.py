@@ -39,7 +39,7 @@ def _plain_token_from_raw(raw_kind, value):
         case _RawTokenKind.MISMATCH:
             raise TokeniseError(f'Unexpected character: {value!r}')
         case _RawTokenKind.IGNORED:
-            return
+            return None
         case other:
             return PlainToken(TokenKind[other.name], value)
 
