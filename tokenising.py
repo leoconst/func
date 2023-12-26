@@ -10,22 +10,26 @@ def tokenise(source):
     return _tokenise_with_context(source, _Context(source))
 
 def _tokenise_with_context(source, context):
-    for kind, value, end in _get_raw_tokens(source):
-        if kind == _RawTokenKind.OPEN_BRACKET:
-            context.bracket_depth += 1
-        elif kind == _RawTokenKind.CLOSE_BRACKET:
-            context.bracket_depth -= 1
-        elif kind == _RawTokenKind.STRING_DELIMITER:
-            string_tokeniser = _StringTokeniser(source[end:])
-            string_token, source = string_tokeniser.tokenise()
-            context.tail = source
-            yield string_token
-            yield from _tokenise_with_context(source, context)
-            return
-        plain_token = _plain_token_from_raw(kind, value)
-        if plain_token is not None:
-            context.tail = source[end:]
-            yield plain_token
+    for raw_kind, value, end in _get_raw_tokens(source):
+        match raw_kind:
+            case _RawTokenKind.MISMATCH:
+                raise TokeniseError(f'Unexpected character: {value!r}')
+            case _RawTokenKind.IGNORED:
+                continue
+            case _RawTokenKind.STRING_DELIMITER:
+                string_tokeniser = _StringTokeniser(source[end:])
+                string_token, source = string_tokeniser.tokenise()
+                context.tail = source
+                yield string_token
+                yield from _tokenise_with_context(source, context)
+                return
+            case _RawTokenKind.OPEN_BRACKET:
+                context.bracket_depth += 1
+            case _RawTokenKind.CLOSE_BRACKET:
+                context.bracket_depth -= 1
+        context.tail = source[end:]
+        kind = TokenKind[raw_kind.name]
+        yield PlainToken(kind, value)
 
 def _get_raw_tokens(source):
     for match in _RAW_TOKEN_RE.finditer(source):
@@ -33,15 +37,6 @@ def _get_raw_tokens(source):
         value = match.group()
         end = match.end()
         yield (kind, value, end)
-
-def _plain_token_from_raw(raw_kind, value):
-    match raw_kind:
-        case _RawTokenKind.MISMATCH:
-            raise TokeniseError(f'Unexpected character: {value!r}')
-        case _RawTokenKind.IGNORED:
-            return None
-        case other:
-            return PlainToken(TokenKind[other.name], value)
 
 class Token:
     pass
