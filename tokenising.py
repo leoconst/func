@@ -144,9 +144,10 @@ class _StringTokeniser:
         self._plain_characters.append(character)
 
     def _add_plain_part_if_any(self):
-        plain_string = ''.join(self._plain_characters)
-        self._parts.append(plain_string)
-        self._plain_characters.clear()
+        if self._plain_characters:
+            plain_string = ''.join(self._plain_characters)
+            self._parts.append(plain_string)
+            self._plain_characters.clear()
 
     def _read_head(self, location):
         head = self._source.read(1)
