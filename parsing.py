@@ -174,6 +174,7 @@ _TOKEN_KIND_DESCRIPTIONS = {
 _END_OF_SOURCE = object()
 _END_OF_SOURCE_DESCRIPTION = 'end of source'
 
+
 def _main():
     source = "name = 'World'\ngreet = print 'Hello, \\(name)!'"
     actual = parse(source)
