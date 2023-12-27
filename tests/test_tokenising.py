@@ -1,5 +1,3 @@
-import tests
-
 from func.tokenising import *
 
 

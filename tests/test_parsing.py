@@ -1,5 +1,3 @@
-import tests
-
 from func.parsing import *
 from func.tokenising import tokenise
 
