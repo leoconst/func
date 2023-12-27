@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import reduce
-from typing import Iterable
 
 from tokenising import *
 
@@ -34,7 +33,7 @@ class IntegerExpressionSyntax(ExpressionSyntax):
 
 @dataclass
 class StringExpressionSyntax(ExpressionSyntax):
-    parts: Iterable[str|ExpressionSyntax]
+    parts: list[str|ExpressionSyntax]
 
 def parse(source):
     token_iterable = tokenise(source)
@@ -45,13 +44,13 @@ def parse(source):
 
 def _parse_module(tokens):
     bindings = tokens.separated(
-        lambda tokens: tokens.expect(NewlineToken),
+        lambda tokens: tokens.expect(TokenKind.NEWLINE),
         _parse_binding)
     return ModuleSyntax(list(bindings))
 
 def _parse_binding(tokens):
-    name = tokens.expect(IdentifierToken).name
-    tokens.expect(EqualsToken)
+    name = tokens.expect(TokenKind.IDENTIFIER).value
+    tokens.expect(TokenKind.EQUALS)
     value = _parse_expression(tokens)
     return BindingSyntax(name, value)
 
@@ -67,31 +66,26 @@ def _parse_single_expression(tokens):
         _parse_string)
 
 def _parse_integer(tokens):
-    integer_token = tokens.expect(IntegerToken)
-    return IntegerExpressionSyntax(integer_token.digits)
+    integer = tokens.expect(TokenKind.INTEGER)
+    return IntegerExpressionSyntax(integer.value)
 
 def _parse_identifier(tokens):
-    identifier_token = tokens.expect(IdentifierToken)
-    return IdentifierExpressionSyntax(identifier_token.name)
-
+    identifier = tokens.expect(TokenKind.IDENTIFIER)
+    return IdentifierExpressionSyntax(identifier.value)
+ 
 def _parse_string(tokens):
-    string_token = tokens.expect(StringToken)
-    parts = list(map(_convert_string_token_part, string_token.parts))
+    string = tokens.expect(TokenKind.STRING)
+    parts = list(map(_parse_string_part, string.parts))
     return StringExpressionSyntax(parts)
 
-def _convert_string_token_part(string_token_part):
-    match string_token_part:
-        case PlainStringTokenPart(contents):
-            return contents
-        case CharacterEscapeStringTokenPart(escape):
-            return _ESCAPE_CHARACTERS[escape]
-        case ExpressionEscapeStringTokenPart(tokens):
+def _parse_string_part(part):
+    match part:
+        case str() as string:
+            return string
+        case list() as tokens:
             return _parse_expression(Tokens(tokens))
-
-_ESCAPE_CHARACTERS = {
-    CharacterEscape.NEWLINE: '\n',
-    CharacterEscape.TAB: '\t',
-}
+        case _:
+            raise TypeError(f'Unknown string part: {part}')
 
 class ParseError(Exception):
     pass
@@ -103,10 +97,11 @@ class Tokens:
         self._position = 0
         self._token_iterator = iter(token_iterable)
 
-    def expect(self, token_type):
+    def expect(self, token_kind):
         return self._expect(
-            lambda token: isinstance(token, token_type),
-            lambda: self._describe_token_type(token_type))
+            lambda token: (token is not _END_OF_SOURCE
+                and token.kind == token_kind),
+            lambda: self._describe_token_kind(token_kind))
 
     def expect_end_of_source(self):
         return self._expect(
@@ -164,24 +159,24 @@ class Tokens:
     def _describe_token(self, token):
         if token is _END_OF_SOURCE:
             return _END_OF_SOURCE_DESCRIPTION
-        return self._describe_token_type(token.__class__)
+        return f'{self._describe_token_kind(token.kind)}'
 
-    def _describe_token_type(self, token_type):
-        return _TOKEN_TYPE_DESCRIPTIONS[token_type]
+    def _describe_token_kind(self, token_kind):
+        return _TOKEN_KIND_DESCRIPTIONS[token_kind]
 
-_TOKEN_TYPE_DESCRIPTIONS = {
-    IntegerToken: 'an integer',
-    IdentifierToken: 'an identifier',
-    StringToken: 'a string',
-    EqualsToken: 'an equals symbol',
-    NewlineToken: 'a newline',
+_TOKEN_KIND_DESCRIPTIONS = {
+    TokenKind.STRING: 'a string',
+    TokenKind.INTEGER: 'an integer',
+    TokenKind.IDENTIFIER: 'an identifier',
+    TokenKind.EQUALS: 'an equals symbol',
+    TokenKind.NEWLINE: 'a newline',
 }
 _END_OF_SOURCE = object()
 _END_OF_SOURCE_DESCRIPTION = 'end of source'
 
+
 def _main():
-    import io
-    source = io.StringIO("name = 'World'\ngreet = print 'Hello, \\(name)!'")
+    source = "name = 'World'\ngreet = print 'Hello, \\(name)!'"
     actual = parse(source)
     expected = ModuleSyntax([
         BindingSyntax(
