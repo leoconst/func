@@ -87,7 +87,7 @@ class _StringTokeniser:
 
     def tokenise(self):
         while True:
-            head = self._read_head('inside string')
+            head = self._get_next('inside string')
             if head == _STRING_DELIMETER:
                 return self._complete_token()
             if head == '\\':
@@ -100,7 +100,7 @@ class _StringTokeniser:
         return StringToken(self._parts)
 
     def _tokenise_escape(self):
-        head = self._read_head('immediately after string escape')
+        head = self._get_next('immediately after string escape')
         if head == '(':
             self._add_expression_escape_tokens_part()
         elif head in _CHARACTER_ESCAPES:
@@ -133,7 +133,7 @@ class _StringTokeniser:
             self._parts.append(plain_string)
             self._plain_characters.clear()
 
-    def _read_head(self, location):
+    def _get_next(self, location):
         return self._source.get_next(location)
 
 def _end_of_source_error(location):
