@@ -6,35 +6,35 @@ from enum import Enum, auto
 
 
 def tokenise(source):
-    tokens = _tokenise_with_context(source, 0, _Context())
-    return (token for token, tail in tokens)
+    return _tokenise_with_context(_Source(source), _Context())
 
-def _tokenise_with_context(source, position, context):
-    for raw_kind, value, end in _get_raw_tokens(source[position:]):
+def _tokenise_with_context(source, context):
+    for raw_kind, value in _get_raw_tokens(source):
         match raw_kind:
             case _RawTokenKind.MISMATCH:
                 raise TokeniseError(f'Unexpected character: {value!r}')
             case _RawTokenKind.IGNORED:
                 continue
             case _RawTokenKind.STRING_DELIMITER:
-                string_tokeniser = _StringTokeniser(source, position + end)
-                string_token, position = string_tokeniser.tokenise()
-                yield (string_token, position)
-                yield from _tokenise_with_context(source, position, context)
+                yield _tokenise_string(source)
+                yield from _tokenise_with_context(source, context)
                 return
             case _RawTokenKind.OPEN_BRACKET:
                 context.bracket_depth += 1
             case _RawTokenKind.CLOSE_BRACKET:
                 context.bracket_depth -= 1
         kind = TokenKind[raw_kind.name]
-        yield (PlainToken(kind, value), position + end)
+        yield PlainToken(kind, value)
 
 def _get_raw_tokens(source):
-    for match in _RAW_TOKEN_RE.finditer(source):
+    for match in source.finditer_tail(_RAW_TOKEN_RE):
         kind = _RawTokenKind[match.lastgroup]
         value = match.group()
-        end = match.end()
-        yield (kind, value, end)
+        yield (kind, value)
+
+def _tokenise_string(source):
+    string_tokeniser = _StringTokeniser(source)
+    return string_tokeniser.tokenise()
 
 class Token:
     pass
@@ -61,10 +61,6 @@ class StringToken(Token):
 class TokeniseError(Exception):
     pass
 
-@dataclass
-class _Context:
-    bracket_depth: int = 0
-
 _STRING_DELIMETER = '\''
 
 class _RawTokenKind(Enum):
@@ -84,9 +80,8 @@ _RAW_TOKEN_RE = re.compile(
 
 class _StringTokeniser:
 
-    def __init__(self, source, position):
+    def __init__(self, source):
         self._source = source
-        self._position = position
         self._plain_characters = []
         self._parts = []
 
@@ -102,8 +97,7 @@ class _StringTokeniser:
 
     def _complete_token(self):
         self._add_plain_part_if_any()
-        string_token = StringToken(self._parts)
-        return (string_token, self._position)
+        return StringToken(self._parts)
 
     def _tokenise_escape(self):
         head = self._read_head('immediately after string escape')
@@ -118,14 +112,12 @@ class _StringTokeniser:
         self._add_plain_part_if_any()
         tokens = []
         context = _Context(bracket_depth=1)
-        for token, position in _tokenise_with_context(
-                self._source, self._position, context):
+        for token in _tokenise_with_context(self._source, context):
             if context.bracket_depth <= 0:
                 break
             tokens.append(token)
         else:
             raise self._end_of_source_error('inside escape expression')
-        self._position = position
         self._parts.append(tokens)
 
     def _add_escaped_character(self, character):
@@ -142,13 +134,11 @@ class _StringTokeniser:
             self._plain_characters.clear()
 
     def _read_head(self, location):
-        try:
-            head = self._source[self._position]
-        except IndexError:
-            raise self._end_of_source_error(location)
-        else:
-            self._position += 1
-            return head
+        return self._source.get_next(
+            fallback=lambda: self._raise_end_of_source_error(location))
+
+    def _raise_end_of_source_error(self, location):
+        raise self._end_of_source_error(location)
 
     @staticmethod
     def _end_of_source_error(location):
@@ -159,6 +149,31 @@ _CHARACTER_ESCAPES = {
     't': '\t',
     '\'': '\'',
 }
+
+class _Source:
+
+    def __init__(self, source):
+        self._source = source
+        self._position = 0
+
+    def get_next(self, *, fallback):
+        try:
+            head = self._source[self._position]
+        except IndexError:
+            return fallback()
+        else:
+            self._position += 1
+            return head
+
+    def finditer_tail(self, pattern):
+        tail = self._source[self._position:]
+        for match in pattern.finditer(tail):
+            self._position += len(match.group())
+            yield match
+
+@dataclass
+class _Context:
+    bracket_depth: int = 0
 
 
 def _main():
