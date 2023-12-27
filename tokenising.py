@@ -168,8 +168,9 @@ class _Context:
 
 
 def _main():
-    source = (" \t repeat 3 '\\'Two plus three\\' equals:"
-        "\\n\\t\\(add\t2 '3').'  \r\n\n= \t")
+    source = '''\
+ \t repeat 3 '\\'Two plus three\\' equals:\\n\\t\\(add\t2 '3').'  \r\n\n= \t\
+'''
     actual = list(tokenise(source))
     expected = [
         PlainToken(TokenKind.IDENTIFIER, 'repeat'),
