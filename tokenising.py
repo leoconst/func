@@ -9,7 +9,7 @@ def tokenise(source):
     return _tokenise_with_context(_Source(source), _Context())
 
 def _tokenise_with_context(source, context):
-    for raw_kind, value in _get_raw_tokens(source):
+    for raw_kind, value in source.get_next_raw_tokens():
         match raw_kind:
             case _RawTokenKind.MISMATCH:
                 raise TokeniseError(f'Unexpected character: {value!r}')
@@ -25,12 +25,6 @@ def _tokenise_with_context(source, context):
                 context.bracket_depth -= 1
         kind = TokenKind[raw_kind.name]
         yield PlainToken(kind, value)
-
-def _get_raw_tokens(source):
-    for match in source.finditer_tail(_RAW_TOKEN_RE):
-        kind = _RawTokenKind[match.lastgroup]
-        value = match.group()
-        yield (kind, value)
 
 def _tokenise_string(source):
     string_tokeniser = _StringTokeniser(source)
@@ -87,7 +81,7 @@ class _StringTokeniser:
 
     def tokenise(self):
         while True:
-            head = self._get_next('inside string')
+            head = self._get_next_character('inside string')
             if head == _STRING_DELIMETER:
                 return self._complete_token()
             if head == '\\':
@@ -100,7 +94,7 @@ class _StringTokeniser:
         return StringToken(self._parts)
 
     def _tokenise_escape(self):
-        head = self._get_next('immediately after string escape')
+        head = self._get_next_character('immediately after string escape')
         if head == '(':
             self._add_expression_escape_tokens_part()
         elif head in _CHARACTER_ESCAPES:
@@ -133,8 +127,8 @@ class _StringTokeniser:
             self._parts.append(plain_string)
             self._plain_characters.clear()
 
-    def _get_next(self, location):
-        return self._source.get_next(location)
+    def _get_next_character(self, location):
+        return self._source.get_next_character(location)
 
 def _end_of_source_error(location):
     return TokeniseError(f'Unexpected end of source {location}')
@@ -151,7 +145,7 @@ class _Source:
         self._source = source
         self._position = 0
 
-    def get_next(self, location):
+    def get_next_character(self, location):
         try:
             head = self._source[self._position]
         except IndexError:
@@ -160,11 +154,13 @@ class _Source:
             self._position += 1
             return head
 
-    def finditer_tail(self, pattern):
-        tail = self._source[self._position:]
-        for match in pattern.finditer(tail):
-            self._position += len(match.group())
-            yield match
+    def get_next_raw_tokens(self):
+        remainder = self._source[self._position:]
+        for match in _RAW_TOKEN_RE.finditer(remainder):
+            kind = _RawTokenKind[match.lastgroup]
+            value = match.group()
+            self._position += len(value)
+            yield (kind, value)
 
 @dataclass
 class _Context:
