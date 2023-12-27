@@ -165,34 +165,3 @@ class _Source:
 @dataclass
 class _Context:
     bracket_depth: int = 0
-
-
-def _main():
-    source = '''\
- \t repeat 3 '\\'Two plus three\\' equals:\\n\\t\\(add\t2 '3').'  \r\n\n= \t\
-'''
-    actual = list(tokenise(source))
-    expected = [
-        PlainToken(TokenKind.IDENTIFIER, 'repeat'),
-        PlainToken(TokenKind.INTEGER, '3'),
-        StringToken([
-            '\'Two plus three\' equals:\n\t',
-            [
-                PlainToken(TokenKind.IDENTIFIER, 'add'),
-                PlainToken(TokenKind.INTEGER, '2'),
-                StringToken([
-                    '3',
-                ]),
-            ],
-            '.'
-        ]),
-        PlainToken(TokenKind.NEWLINE, '\r\n'),
-        PlainToken(TokenKind.NEWLINE, '\n'),
-        PlainToken(TokenKind.EQUALS, '='),
-    ]
-    from pprint import pprint
-    pprint(list(zip(actual, expected)))
-    assert actual == expected
-
-if __name__ == '__main__':
-    _main()
