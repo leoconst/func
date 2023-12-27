@@ -6,7 +6,9 @@ from enum import Enum, auto
 
 
 def tokenise(source):
-    return _tokenise_with_context(_Source(source), _Context())
+    source = _Source(source)
+    context = _Context()
+    return _tokenise_with_context(source, context)
 
 def _tokenise_with_context(source, context):
     for raw_kind, value in source.get_next_raw_tokens():
