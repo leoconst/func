@@ -1,6 +1,5 @@
 import tests
 
-tests.enable_module_imports()
 from func.tokenising import *
 
 
@@ -31,10 +30,3 @@ def test_example():
         PlainToken(TokenKind.EQUALS, '='),
     ]
     assert actual == expected
-
-
-def main():
-    tests.run()
-
-if __name__ == '__main__':
-    main()
