@@ -1,11 +1,13 @@
 import tests
 
 from func.parsing import *
+from func.tokenising import tokenise
 
 
 def test_example():
     source = "name = 'World'\ngreet = print 'Hello, \\(name)!'"
-    actual = parse(source)
+    tokens = tokenise(source)
+    actual = parse(tokens)
     expected = ModuleSyntax([
         BindingSyntax(
             'name',

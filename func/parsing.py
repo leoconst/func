@@ -35,9 +35,8 @@ class IntegerExpressionSyntax(ExpressionSyntax):
 class StringExpressionSyntax(ExpressionSyntax):
     parts: list[str|ExpressionSyntax]
 
-def parse(source):
-    token_iterable = tokenise(source)
-    tokens = Tokens(token_iterable)
+def parse(tokens):
+    tokens = Tokens(tokens)
     result = _parse_module(tokens)
     tokens.expect_end_of_source()
     return result
