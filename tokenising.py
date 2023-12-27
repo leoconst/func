@@ -28,10 +28,6 @@ def _tokenise_with_context(source, context):
         kind = TokenKind[raw_kind.name]
         yield PlainToken(kind, value)
 
-def _tokenise_string(source):
-    string_tokeniser = _StringTokeniser(source)
-    return string_tokeniser.tokenise()
-
 class Token:
     pass
 
@@ -74,72 +70,74 @@ _RAW_TOKEN_RE = re.compile(
     r'|'.join(rf'(?P<{raw_token_kind.name}>{raw_token_kind.value})'
         for raw_token_kind in _RawTokenKind), re.DOTALL)
 
-class _StringTokeniser:
-
-    def __init__(self, source):
-        self._source = source
-        self._plain_characters = []
-        self._parts = []
-
-    def tokenise(self):
-        while True:
-            head = self._get_next_character('inside string')
-            if head == _STRING_DELIMETER:
-                return self._complete_token()
-            if head == '\\':
-                self._tokenise_escape()
-            else:
-                self._add_plain_character(head)
-
-    def _complete_token(self):
-        self._add_plain_part_if_any()
-        return StringToken(self._parts)
-
-    def _tokenise_escape(self):
-        head = self._get_next_character('immediately after string escape')
-        if head == '(':
-            self._add_expression_escape_tokens_part()
-        elif head in _CHARACTER_ESCAPES:
-            self._add_escaped_character(head)
+def _tokenise_string(source):
+    token_builder = _StringTokenBuilder()
+    while True:
+        head = source.get_next_character('inside string')
+        if head == _STRING_DELIMETER:
+            return token_builder.build()
+        if head == '\\':
+            _tokenise_escape(source, token_builder)
         else:
-            raise TokeniseError(f'Invalid escape character: {head!r}')
+            token_builder.add_plain_character(head)
 
-    def _add_expression_escape_tokens_part(self):
-        self._add_plain_part_if_any()
-        tokens = []
-        context = _Context(bracket_depth=1)
-        for token in _tokenise_with_context(self._source, context):
-            if context.bracket_depth <= 0:
-                break
-            tokens.append(token)
-        else:
-            raise _end_of_source_error('inside escape expression')
-        self._parts.append(tokens)
+def _tokenise_escape(source, token_builder):
+    head = source.get_next_character('immediately after string escape')
+    if head == '(':
+        _add_expression_escape_part(source, token_builder)
+    elif head in _CHARACTER_ESCAPES:
+        _add_escaped_character(token_builder, head)
+    else:
+        raise TokeniseError(f'Invalid escape character: {head!r}')
 
-    def _add_escaped_character(self, character):
-        escaped_character = _CHARACTER_ESCAPES[character]
-        self._add_plain_character(escaped_character)
+def _add_expression_escape_part(source, token_builder):
+    token_builder.add_plain_part_if_any()
+    tokens = list(_tokenise_until_brackets_balanced(source))
+    token_builder.add_expression_escape_part(tokens)
 
-    def _add_plain_character(self, character):
-        self._plain_characters.append(character)
+def _tokenise_until_brackets_balanced(source):
+    context = _Context(bracket_depth=1)
+    for token in _tokenise_with_context(source, context):
+        if context.bracket_depth <= 0:
+            break
+        yield token
+    else:
+        raise _end_of_source_error('inside escape expression')
 
-    def _add_plain_part_if_any(self):
-        if self._plain_characters:
-            plain_string = ''.join(self._plain_characters)
-            self._parts.append(plain_string)
-            self._plain_characters.clear()
-
-    def _get_next_character(self, location):
-        return self._source.get_next_character(location)
-
-def _end_of_source_error(location):
-    return TokeniseError(f'Unexpected end of source {location}')
+def _add_escaped_character(token_builder, character):
+    escaped_character = _CHARACTER_ESCAPES[character]
+    token_builder.add_plain_character(escaped_character)
 
 _CHARACTER_ESCAPES = {
     'n': '\n',
     't': '\t',
     '\'': '\'',
 }
+
+def _end_of_source_error(location):
+    return TokeniseError(f'Unexpected end of source {location}')
+
+class _StringTokenBuilder:
+
+    def __init__(self):
+        self._plain_characters = []
+        self._parts = []
+
+    def add_plain_character(self, character):
+        self._plain_characters.append(character)
+
+    def add_plain_part_if_any(self):
+        if self._plain_characters:
+            plain_string = ''.join(self._plain_characters)
+            self._parts.append(plain_string)
+            self._plain_characters.clear()
+
+    def add_expression_escape_part(self, tokens):
+        self._parts.append(tokens)        
+
+    def build(self):
+        self.add_plain_part_if_any()
+        return StringToken(self._parts)
 
 class _Source:
 
