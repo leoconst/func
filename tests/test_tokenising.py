@@ -38,6 +38,13 @@ def test_end_of_source_in_string():
     with pytest.raises(TokeniseError, match=expected_error_message):
         _evaluate_iterable(tokens)
 
+def test_end_of_source_in_expression_escape():
+    source = "'\\("
+    tokens = tokenise(source)
+    expected_error_message = 'Unexpected end-of-source inside expression escape'
+    with pytest.raises(TokeniseError, match=expected_error_message):
+        _evaluate_iterable(tokens)
+
 def _evaluate_iterable(iterable):
     for _ in iterable:
         pass

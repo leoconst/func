@@ -102,7 +102,7 @@ def _tokenise_until_brackets_balanced(source):
             break
         yield token
     else:
-        raise _end_of_source_error('inside escape expression')
+        raise _end_of_source_error('inside expression escape')
 
 def _add_escaped_character(token_builder, character):
     escaped_character = _CHARACTER_ESCAPES[character]
