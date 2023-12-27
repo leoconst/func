@@ -115,7 +115,7 @@ _CHARACTER_ESCAPES = {
 }
 
 def _end_of_source_error(location):
-    return TokeniseError(f'Unexpected end of source {location}')
+    return TokeniseError(f'Unexpected end-of-source {location}')
 
 class _StringTokenBuilder:
 
