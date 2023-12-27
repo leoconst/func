@@ -31,15 +31,22 @@ def test_example():
     ]
     assert actual == expected
 
-def test_end_of_source_in_string():
-    source = "'Hello wo-"
+@pytest.mark.parametrize('source', [
+    "'Hello wo-",
+    "'\\('Hi th-",
+    "'\\('Greetings \\('name",
+])
+def test_end_of_source_in_string(source):
     tokens = tokenise(source)
     expected_error_message = 'Unexpected end-of-source inside string'
     with pytest.raises(TokeniseError, match=expected_error_message):
         _evaluate_iterable(tokens)
 
-def test_end_of_source_in_expression_escape():
-    source = "'\\("
+@pytest.mark.parametrize('source', [
+    "'\\(",
+    "'Hello \\(name 'key:\\(time_to_",
+])
+def test_end_of_source_in_expression_escape(source):
     tokens = tokenise(source)
     expected_error_message = 'Unexpected end-of-source inside expression escape'
     with pytest.raises(TokeniseError, match=expected_error_message):
