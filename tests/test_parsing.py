@@ -4,6 +4,12 @@ from func.parsing import *
 from func.tokenising import tokenise
 
 
+def test_empty():
+    tokens = []
+    actual = parse(tokens)
+    expected = ModuleSyntax([])
+    assert actual == expected
+
 def test_example():
     source = "name = 'World'\ngreet = print 'Hello, \\(name)!'"
     tokens = tokenise(source)
