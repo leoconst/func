@@ -117,7 +117,7 @@ class _StringTokeniser:
                 break
             tokens.append(token)
         else:
-            raise self._end_of_source_error('inside escape expression')
+            raise _end_of_source_error('inside escape expression')
         self._parts.append(tokens)
 
     def _add_escaped_character(self, character):
@@ -134,15 +134,10 @@ class _StringTokeniser:
             self._plain_characters.clear()
 
     def _read_head(self, location):
-        return self._source.get_next(
-            fallback=lambda: self._raise_end_of_source_error(location))
+        return self._source.get_next(location)
 
-    def _raise_end_of_source_error(self, location):
-        raise self._end_of_source_error(location)
-
-    @staticmethod
-    def _end_of_source_error(location):
-        return TokeniseError(f'Unexpected end of source {location}')
+def _end_of_source_error(location):
+    return TokeniseError(f'Unexpected end of source {location}')
 
 _CHARACTER_ESCAPES = {
     'n': '\n',
@@ -156,11 +151,11 @@ class _Source:
         self._source = source
         self._position = 0
 
-    def get_next(self, *, fallback):
+    def get_next(self, location):
         try:
             head = self._source[self._position]
         except IndexError:
-            return fallback()
+            raise _end_of_source_error(location)
         else:
             self._position += 1
             return head
