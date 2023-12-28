@@ -103,7 +103,7 @@ class Tokens:
             lambda: self._describe_token_kind(token_kind))
 
     def expect_end_of_source(self):
-        return self._expect(
+        self._expect(
             lambda token: token is _END_OF_SOURCE,
             lambda: _END_OF_SOURCE_DESCRIPTION)
 
