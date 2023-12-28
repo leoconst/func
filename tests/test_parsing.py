@@ -10,6 +10,40 @@ from func.tokenising import tokenise
         ModuleSyntax([])
     ),
     (
+        'hello = world',
+        ModuleSyntax([
+            BindingSyntax(
+                'hello',
+                IdentifierExpressionSyntax('world')
+            )
+        ])
+    ),
+    (
+        "indentifier_calls = a b c\nstring_calls = 'a' 'b' 'c'",
+        ModuleSyntax([
+            BindingSyntax(
+                'indentifier_calls',
+                CallExpressionSyntax(
+                    CallExpressionSyntax(
+                        IdentifierExpressionSyntax('a'),
+                        IdentifierExpressionSyntax('b')
+                    ),
+                    IdentifierExpressionSyntax('c')
+                )
+            ),
+            BindingSyntax(
+                'string_calls',
+                CallExpressionSyntax(
+                    CallExpressionSyntax(
+                        StringExpressionSyntax(['a']),
+                        StringExpressionSyntax(['b'])
+                    ),
+                    StringExpressionSyntax(['c'])
+                )
+            ),
+        ])
+    ),
+    (
         "name = 'World'\ngreet = print 'Hello, \\(name)!'",
         ModuleSyntax([
             BindingSyntax(
