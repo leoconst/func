@@ -68,3 +68,17 @@ def test_success(source, expected):
     tokens = tokenise(source)
     actual = parse(tokens)
     assert actual == expected
+
+@pytest.mark.parametrize('source, expectation', [
+    ('var =', 'an identifier'),
+    ('call me', 'an identifier'),
+    ('=', 'an equals symbol'),
+    ("''", 'a string'),
+    ("'string'", 'a string'),
+    ('100', 'an integer'),
+])
+def test_failure(source, expectation):
+    tokens = tokenise(source)
+    expected_error_message = f'Expected end-of-source, got {expectation}'
+    with pytest.raises(ParseError, match=expected_error_message):
+        parse(tokens)

@@ -171,4 +171,4 @@ _TOKEN_KIND_DESCRIPTIONS = {
     TokenKind.NEWLINE: 'a newline',
 }
 _END_OF_SOURCE = object()
-_END_OF_SOURCE_DESCRIPTION = 'end of source'
+_END_OF_SOURCE_DESCRIPTION = 'end-of-source'
