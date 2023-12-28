@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import reduce
 
-from tokenising import *
+from .tokenising import *
 
 
 @dataclass
@@ -35,9 +35,8 @@ class IntegerExpressionSyntax(ExpressionSyntax):
 class StringExpressionSyntax(ExpressionSyntax):
     parts: list[str|ExpressionSyntax]
 
-def parse(source):
-    token_iterable = tokenise(source)
-    tokens = Tokens(token_iterable)
+def parse(tokens):
+    tokens = Tokens(tokens)
     result = _parse_module(tokens)
     tokens.expect_end_of_source()
     return result
@@ -172,34 +171,4 @@ _TOKEN_KIND_DESCRIPTIONS = {
     TokenKind.NEWLINE: 'a newline',
 }
 _END_OF_SOURCE = object()
-_END_OF_SOURCE_DESCRIPTION = 'end of source'
-
-
-def _main():
-    source = "name = 'World'\ngreet = print 'Hello, \\(name)!'"
-    actual = parse(source)
-    expected = ModuleSyntax([
-        BindingSyntax(
-            'name',
-            StringExpressionSyntax([
-                'World',
-            ])
-        ),
-        BindingSyntax(
-            'greet',
-            CallExpressionSyntax(
-                IdentifierExpressionSyntax('print'),
-                StringExpressionSyntax([
-                    'Hello, ',
-                    IdentifierExpressionSyntax('name'),
-                    '!',
-                ])
-            )
-        ),
-    ])
-    from pprint import pprint
-    pprint(actual)
-    assert actual == expected
-
-if __name__ == '__main__':
-    _main()
+_END_OF_SOURCE_DESCRIPTION = 'end-of-source'
