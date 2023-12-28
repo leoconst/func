@@ -158,7 +158,7 @@ class Tokens:
     def _describe_token(self, token):
         if token is _END_OF_SOURCE:
             return _END_OF_SOURCE_DESCRIPTION
-        return f'{self._describe_token_kind(token.kind)}'
+        return self._describe_token_kind(token.kind)
 
     def _describe_token_kind(self, token_kind):
         return _TOKEN_KIND_DESCRIPTIONS[token_kind]
