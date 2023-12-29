@@ -69,16 +69,23 @@ def test_success(source, expected):
     actual = parse(tokens)
     assert actual == expected
 
-@pytest.mark.parametrize('source, expectation', [
-    ('var =', 'an identifier'),
-    ('call me', 'an identifier'),
-    ('=', 'an equals symbol'),
-    ("''", 'a string'),
-    ("'string'", 'a string'),
-    ('100', 'an integer'),
+@pytest.mark.parametrize('source, expectation, reality', [
+    ('var', 'an equals symbol', 'end-of-source'),
+    ('var =', 'an expression', 'end-of-source'),
+    ('var = =', 'an expression', 'an equals symbol'),
+    ('call me', 'an equals symbol', 'an identifier'),
+    ("val = call this 'thing' now =", 'a newline', 'an equals symbol'),
+    ('name = value\n', 'an identifier', 'end-of-source'),
+    ("number = 3\n'not a binding'", 'an identifier', 'a string'),
+    ("number = 3\nstring = ''\n", 'an identifier', 'end-of-source'),
+    ('=', 'an identifier', 'an equals symbol'),
+    ("''", 'an identifier', 'a string'),
+    ("'string'", 'an identifier', 'a string'),
+    ('100', 'an identifier', 'an integer'),
+    ('var = 1 =', 'a newline', 'an equals symbol'),
 ])
-def test_failure(source, expectation):
+def test_failure(source, expectation, reality):
     tokens = tokenise(source)
-    expected_error_message = f'Expected end-of-source, got {expectation}'
+    expected_error_message = f'Expected {expectation}, got {reality}'
     with pytest.raises(ParseError, match=expected_error_message):
         parse(tokens)

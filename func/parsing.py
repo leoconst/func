@@ -42,10 +42,15 @@ def parse(tokens):
     return result
 
 def _parse_module(tokens):
-    bindings = tokens.separated(
-        lambda tokens: tokens.expect(TokenKind.NEWLINE),
-        _parse_binding)
-    return ModuleSyntax(list(bindings))
+    bindings = []
+    first = True
+    while tokens.peek() is not _END_OF_SOURCE:
+        if not first:
+            tokens.expect(TokenKind.NEWLINE)
+        first = False
+        binding = _parse_binding(tokens)
+        bindings.append(binding)
+    return ModuleSyntax(bindings)
 
 def _parse_binding(tokens):
     name = tokens.expect(TokenKind.IDENTIFIER).value
@@ -124,15 +129,13 @@ class Tokens:
         while (result := self._try(parser)) is not None:
             yield result
 
-    def separated(self, separator, item):
-        first = self._try(item)
-        if first is None:
-            return
-        yield first
-        def parse_tail(tokens):
-            separator(tokens)
-            return item(tokens)
-        yield from self.zero_or_more(parse_tail)
+    def peek(self):
+        try:
+            token = self._tokens[self._position]
+        except IndexError:
+            token = next(self._token_iterator, _END_OF_SOURCE)
+            self._tokens.append(token)
+        return token
 
     def _try(self, parser):
         saved_position = self._position
@@ -143,11 +146,7 @@ class Tokens:
             return None
 
     def _get_next(self):
-        try:
-            token = self._tokens[self._position]
-        except IndexError:
-            token = next(self._token_iterator, _END_OF_SOURCE)
-            self._tokens.append(token)
+        token = self.peek()
         self._position += 1
         return token
 
