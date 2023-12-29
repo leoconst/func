@@ -64,29 +64,25 @@ def _parse_expression(tokens):
     return reduce(CallExpressionSyntax, arguments, first)
 
 def _parse_single_expression(tokens):
-    return tokens.branch('an expression',
-        _parse_integer,
-        _parse_identifier,
-        _parse_string,
-        _parse_bracketed_expression,
-    )
+    return tokens.branch('an expression', {
+        TokenKind.INTEGER: _parse_integer,
+        TokenKind.IDENTIFIER: _parse_identifier,
+        TokenKind.STRING: _parse_string,
+        TokenKind.OPEN_BRACKET: _parse_bracketed_expression,
+    })
 
-def _parse_bracketed_expression(tokens):
-    tokens.expect(TokenKind.OPEN_BRACKET)
+def _parse_bracketed_expression(tokens, _):
     expression = _parse_expression(tokens)
     tokens.expect(TokenKind.CLOSE_BRACKET)
     return expression
 
-def _parse_integer(tokens):
-    integer = tokens.expect(TokenKind.INTEGER)
+def _parse_integer(tokens, integer):
     return IntegerExpressionSyntax(integer.value)
 
-def _parse_identifier(tokens):
-    identifier = tokens.expect(TokenKind.IDENTIFIER)
+def _parse_identifier(tokens, identifier):
     return IdentifierExpressionSyntax(identifier.value)
  
-def _parse_string(tokens):
-    string = tokens.expect(TokenKind.STRING)
+def _parse_string(tokens, string):
     parts = list(map(_parse_string_part, string.parts))
     return StringExpressionSyntax(parts)
 
@@ -126,12 +122,12 @@ class Tokens:
             raise self._error(describer(), token)
         return token
 
-    def branch(self, description, *branches):
-        for branch in branches:
-            result = self._try(branch)
-            if result is not None:
-                return result
-        raise self._error(description, self._get_next())
+    def branch(self, description, branches):
+        next_token = self._get_next()
+        if next_token is not _END_OF_SOURCE:
+            if (branch := branches.get(next_token.kind)) is not None:
+                return branch(self, next_token)
+        raise self._error(description, next_token)
 
     def zero_or_more(self, parser):
         while (result := self._try(parser)) is not None:
