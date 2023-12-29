@@ -63,6 +63,63 @@ from func.tokenising import tokenise
             ),
         ])
     ),
+    (
+        'var = (3)',
+        ModuleSyntax([
+            BindingSyntax(
+                'var',
+                IntegerExpressionSyntax('3')
+            ),
+        ])
+    ),
+    (
+        'var = (a b)',
+        ModuleSyntax([
+            BindingSyntax(
+                'var',
+                CallExpressionSyntax(
+                    IdentifierExpressionSyntax('a'),
+                    IdentifierExpressionSyntax('b')
+                )
+            ),
+        ])
+    ),
+    (
+        'var = (a b) (c d)',
+        ModuleSyntax([
+            BindingSyntax(
+                'var',
+                CallExpressionSyntax(
+                    CallExpressionSyntax(
+                        IdentifierExpressionSyntax('a'),
+                        IdentifierExpressionSyntax('b')
+                    ),
+                    CallExpressionSyntax(
+                        IdentifierExpressionSyntax('c'),
+                        IdentifierExpressionSyntax('d')
+                    )
+                )
+            ),
+        ])
+    ),
+    (
+        'var = a (b c d)',
+        ModuleSyntax([
+            BindingSyntax(
+                'var',
+                CallExpressionSyntax(
+                    IdentifierExpressionSyntax('a'),
+                    CallExpressionSyntax(
+                        CallExpressionSyntax(
+                            IdentifierExpressionSyntax('b'),
+                            IdentifierExpressionSyntax('c')
+                        ),
+                        IdentifierExpressionSyntax('d')
+                    )
+                )
+            ),
+        ])
+    ),
 ])
 def test_success(source, expected):
     tokens = tokenise(source)
@@ -83,6 +140,9 @@ def test_success(source, expected):
     ("'string'", 'an identifier', 'a string'),
     ('100', 'an identifier', 'an integer'),
     ('var = 1 =', 'a newline', 'an equals symbol'),
+    ('(', 'an identifier', 'an opening bracket'),
+    ('value = (', 'an expression', 'an opening bracket'),
+    ('value = )', 'an expression', 'a closing bracket'),
 ])
 def test_failure(source, expectation, reality):
     tokens = tokenise(source)

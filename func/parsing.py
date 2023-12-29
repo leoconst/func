@@ -67,7 +67,15 @@ def _parse_single_expression(tokens):
     return tokens.branch('an expression',
         _parse_integer,
         _parse_identifier,
-        _parse_string)
+        _parse_string,
+        _parse_bracketed_expression,
+    )
+
+def _parse_bracketed_expression(tokens):
+    tokens.expect(TokenKind.OPEN_BRACKET)
+    expression = _parse_expression(tokens)
+    tokens.expect(TokenKind.CLOSE_BRACKET)
+    return expression
 
 def _parse_integer(tokens):
     integer = tokens.expect(TokenKind.INTEGER)
@@ -164,10 +172,12 @@ class Tokens:
 
 _TOKEN_KIND_DESCRIPTIONS = {
     TokenKind.STRING: 'a string',
-    TokenKind.INTEGER: 'an integer',
     TokenKind.IDENTIFIER: 'an identifier',
+    TokenKind.INTEGER: 'an integer',
     TokenKind.EQUALS: 'an equals symbol',
     TokenKind.NEWLINE: 'a newline',
+    TokenKind.OPEN_BRACKET: 'an opening bracket',
+    TokenKind.CLOSE_BRACKET: 'a closing bracket',
 }
 _END_OF_SOURCE = object()
 _END_OF_SOURCE_DESCRIPTION = 'end-of-source'
