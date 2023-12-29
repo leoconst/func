@@ -59,17 +59,17 @@ def _parse_binding(tokens):
     return BindingSyntax(name, value)
 
 def _parse_expression(tokens):
-    first = _parse_single_expression(tokens)
-    arguments = tokens.zero_or_more(_parse_single_expression)
-    return reduce(CallExpressionSyntax, arguments, first)
-
-def _parse_single_expression(tokens):
-    return tokens.branch('an expression', {
+    branches = {
         TokenKind.INTEGER: _parse_integer,
         TokenKind.IDENTIFIER: _parse_identifier,
         TokenKind.STRING: _parse_string,
         TokenKind.OPEN_BRACKET: _parse_bracketed_expression,
-    })
+    }
+    first = tokens.branch('an expression', branches)
+    arguments = []
+    while (argument := tokens.try_branch(branches)) is not None:
+        arguments.append(argument)
+    return reduce(CallExpressionSyntax, arguments, first)
 
 def _parse_bracketed_expression(tokens, _):
     expression = _parse_expression(tokens)
@@ -123,15 +123,22 @@ class Tokens:
         return token
 
     def branch(self, description, branches):
+        def fallback(next_token):
+            raise self._error(description, next_token)
+        return self._branch_or(branches, fallback)
+
+    def try_branch(self, branches):
+        def fallback(next_token):
+            self._position -= 1
+            return None
+        return self._branch_or(branches, fallback)
+
+    def _branch_or(self, branches, fallback):
         next_token = self._get_next()
         if next_token is not _END_OF_SOURCE:
             if (branch := branches.get(next_token.kind)) is not None:
                 return branch(self, next_token)
-        raise self._error(description, next_token)
-
-    def zero_or_more(self, parser):
-        while (result := self._try(parser)) is not None:
-            yield result
+        return fallback(next_token)
 
     def peek(self):
         try:
@@ -140,14 +147,6 @@ class Tokens:
             token = next(self._token_iterator, _END_OF_SOURCE)
             self._tokens.append(token)
         return token
-
-    def _try(self, parser):
-        saved_position = self._position
-        try:
-            return parser(self)
-        except ParseError:
-            self._position = saved_position
-            return None
 
     def _get_next(self):
         token = self.peek()

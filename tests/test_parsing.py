@@ -144,6 +144,9 @@ def test_success(source, expected):
     ('value = (', 'an expression', 'end-of-source'),
     ('value = )', 'an expression', 'a closing bracket'),
     ('value = (hello', 'a closing bracket', 'end-of-source'),
+    ('value = (3 (', 'an expression', 'end-of-source'),
+    ('value = ()', 'an expression', 'a closing bracket'),
+    ('value = (a b c (d e', 'a closing bracket', 'end-of-source')
 ])
 def test_failure(source, expectation, reality):
     tokens = tokenise(source)
