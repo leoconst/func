@@ -1,62 +1,62 @@
 import pytest
 
-from func.parsing import *
-from func.tokenising import tokenise
+from func.syntax import *
+from func.tokens import tokenise
 
 
 @pytest.mark.parametrize('source, expected', [
     (
         '',
-        ModuleSyntax([])
+        Module([])
     ),
     (
         'hello = world',
-        ModuleSyntax([
-            BindingSyntax(
+        Module([
+            Binding(
                 'hello',
-                IdentifierExpressionSyntax('world')
+                Identifier('world')
             )
         ])
     ),
     (
         "indentifier_calls = a b c\nstring_calls = 'a' 'b' 'c'",
-        ModuleSyntax([
-            BindingSyntax(
+        Module([
+            Binding(
                 'indentifier_calls',
-                CallExpressionSyntax(
-                    CallExpressionSyntax(
-                        IdentifierExpressionSyntax('a'),
-                        IdentifierExpressionSyntax('b')
+                Call(
+                    Call(
+                        Identifier('a'),
+                        Identifier('b')
                     ),
-                    IdentifierExpressionSyntax('c')
+                    Identifier('c')
                 )
             ),
-            BindingSyntax(
+            Binding(
                 'string_calls',
-                CallExpressionSyntax(
-                    CallExpressionSyntax(
-                        StringExpressionSyntax(['a']),
-                        StringExpressionSyntax(['b'])
+                Call(
+                    Call(
+                        String(['a']),
+                        String(['b'])
                     ),
-                    StringExpressionSyntax(['c'])
+                    String(['c'])
                 )
             ),
         ])
     ),
     (
         "name = 'World'\ngreet = print 'Hello, \\(name)!'",
-        ModuleSyntax([
-            BindingSyntax(
+        Module([
+            Binding(
                 'name',
-                StringExpressionSyntax(['World'])
+                String(['World'])
             ),
-            BindingSyntax(
+            Binding(
                 'greet',
-                CallExpressionSyntax(
-                    IdentifierExpressionSyntax('print'),
-                    StringExpressionSyntax([
+                Call(
+                    Identifier('print'),
+                    String([
                         'Hello, ',
-                        IdentifierExpressionSyntax('name'),
+                        Identifier('name'),
                         '!',
                     ])
                 )
@@ -65,38 +65,38 @@ from func.tokenising import tokenise
     ),
     (
         'var = (3)',
-        ModuleSyntax([
-            BindingSyntax(
+        Module([
+            Binding(
                 'var',
-                IntegerExpressionSyntax('3')
+                Integer('3')
             ),
         ])
     ),
     (
         'var = (a b)',
-        ModuleSyntax([
-            BindingSyntax(
+        Module([
+            Binding(
                 'var',
-                CallExpressionSyntax(
-                    IdentifierExpressionSyntax('a'),
-                    IdentifierExpressionSyntax('b')
+                Call(
+                    Identifier('a'),
+                    Identifier('b')
                 )
             ),
         ])
     ),
     (
         'var = (a b) (c d)',
-        ModuleSyntax([
-            BindingSyntax(
+        Module([
+            Binding(
                 'var',
-                CallExpressionSyntax(
-                    CallExpressionSyntax(
-                        IdentifierExpressionSyntax('a'),
-                        IdentifierExpressionSyntax('b')
+                Call(
+                    Call(
+                        Identifier('a'),
+                        Identifier('b')
                     ),
-                    CallExpressionSyntax(
-                        IdentifierExpressionSyntax('c'),
-                        IdentifierExpressionSyntax('d')
+                    Call(
+                        Identifier('c'),
+                        Identifier('d')
                     )
                 )
             ),
@@ -104,17 +104,17 @@ from func.tokenising import tokenise
     ),
     (
         'var = a (b c d)',
-        ModuleSyntax([
-            BindingSyntax(
+        Module([
+            Binding(
                 'var',
-                CallExpressionSyntax(
-                    IdentifierExpressionSyntax('a'),
-                    CallExpressionSyntax(
-                        CallExpressionSyntax(
-                            IdentifierExpressionSyntax('b'),
-                            IdentifierExpressionSyntax('c')
+                Call(
+                    Identifier('a'),
+                    Call(
+                        Call(
+                            Identifier('b'),
+                            Identifier('c')
                         ),
-                        IdentifierExpressionSyntax('d')
+                        Identifier('d')
                     )
                 )
             ),

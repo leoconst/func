@@ -3,37 +3,37 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import reduce
 
-from .tokenising import *
+from .tokens import *
 
 
 @dataclass
-class ModuleSyntax:
-    bindings: list[BindingSyntax]
+class Module:
+    bindings: list[Binding]
 
 @dataclass
-class BindingSyntax:
+class Binding:
     name: str
-    value: ExpressionSyntax
+    value: Expression
 
-class ExpressionSyntax:
+class Expression:
     pass
 
 @dataclass
-class CallExpressionSyntax(ExpressionSyntax):
-    callable_: ExpressionSyntax
-    argument: ExpressionSyntax
+class Call(Expression):
+    callable_: Expression
+    argument: Expression
 
 @dataclass
-class IdentifierExpressionSyntax(ExpressionSyntax):
+class Identifier(Expression):
     name: str
 
 @dataclass
-class IntegerExpressionSyntax(ExpressionSyntax):
+class Integer(Expression):
     digits: str
 
 @dataclass
-class StringExpressionSyntax(ExpressionSyntax):
-    parts: list[str|ExpressionSyntax]
+class String(Expression):
+    parts: list[str|Expression]
 
 def parse(tokens):
     tokens = Tokens(tokens)
@@ -50,13 +50,13 @@ def _parse_module(tokens):
         first = False
         binding = _parse_binding(tokens)
         bindings.append(binding)
-    return ModuleSyntax(bindings)
+    return Module(bindings)
 
 def _parse_binding(tokens):
     name = tokens.expect(TokenKind.IDENTIFIER).value
     tokens.expect(TokenKind.EQUALS)
     value = _parse_expression(tokens)
-    return BindingSyntax(name, value)
+    return Binding(name, value)
 
 def _parse_expression(tokens):
     branches = {
@@ -69,7 +69,7 @@ def _parse_expression(tokens):
     arguments = []
     while (argument := tokens.try_branch(branches)) is not None:
         arguments.append(argument)
-    return reduce(CallExpressionSyntax, arguments, first)
+    return reduce(Call, arguments, first)
 
 def _accept_bracketed_expression(tokens):
     expression = _parse_expression(tokens)
@@ -77,14 +77,14 @@ def _accept_bracketed_expression(tokens):
     return expression
 
 def _accept_integer(integer):
-    return IntegerExpressionSyntax(integer.value)
+    return Integer(integer.value)
 
 def _accept_identifier(identifier):
-    return IdentifierExpressionSyntax(identifier.value)
+    return Identifier(identifier.value)
  
 def _accept_string(string):
     parts = list(map(_parse_string_part, string.parts))
-    return StringExpressionSyntax(parts)
+    return String(parts)
 
 def _parse_string_part(part):
     match part:
