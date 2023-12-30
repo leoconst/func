@@ -120,6 +120,18 @@ from func.tokens import tokenise
             ),
         ])
     ),
+    (
+        'var = λa -> b',
+        Module([
+            Binding(
+                'var',
+                Lambda(
+                    'a',
+                    Identifier('b')
+                )
+            )
+        ])
+    ),
 ])
 def test_success(source, expected):
     tokens = tokenise(source)
@@ -146,7 +158,11 @@ def test_success(source, expected):
     ('value = (hello', 'a closing bracket', 'end-of-source'),
     ('value = (3 (', 'an expression', 'end-of-source'),
     ('value = ()', 'an expression', 'a closing bracket'),
-    ('value = (a b c (d e', 'a closing bracket', 'end-of-source')
+    ('value = (a b c (d e', 'a closing bracket', 'end-of-source'),
+    ('value = λ', 'an identifier', 'end-of-source'),
+    ('value = λa', 'an arrow', 'end-of-source'),
+    ('value = λa ->', 'an expression', 'end-of-source'),
+    ('λ', 'an identifier', 'the beginning of a lambda'),
 ])
 def test_failure(source, expectation, reality):
     tokens = tokenise(source)
