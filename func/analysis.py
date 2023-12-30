@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .syntax import *
+from . import syntax
 
 
 @dataclass
@@ -44,14 +44,14 @@ def analyse(module):
 
 def _analyse_expression(expression):
     match expression:
-        case IntegerExpressionSyntax(string):
+        case syntax.Integer(string):
             return Integer(int(string))
-        case StringExpressionSyntax(parts):
+        case syntax.String(parts):
             string_parts = list(map(_analyse_string_part, parts))
             return String(string_parts)
-        case IdentifierExpressionSyntax(name):
+        case syntax.Identifier(name):
             return Identifier(name)
-        case CallExpressionSyntax(callable_, argument):
+        case syntax.Call(callable_, argument):
             return Call(
                 _analyse_expression(callable_),
                 _analyse_expression(argument))
@@ -60,7 +60,7 @@ def _analyse_string_part(part):
     match part:
         case str() as string:
             return string
-        case ExpressionSyntax() as expression:
+        case syntax.Expression() as expression:
             return _analyse_expression(expression)
         case _:
             raise TypeError(f'Unknown string part: {part}')
