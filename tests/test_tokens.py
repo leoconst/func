@@ -1,6 +1,6 @@
 import pytest
 
-from func.tokenising import *
+from func.tokens import *
 
 
 def test_empty():

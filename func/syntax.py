@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from functools import reduce
 
-from .tokenising import *
+from .tokens import *
 
 
 @dataclass

@@ -1,7 +1,7 @@
 import pytest
 
-from func.tokenising import tokenise
-from func.parsing import parse
+from func.tokens import tokenise
+from func.syntax import parse
 from func.analysis import *
 
 
