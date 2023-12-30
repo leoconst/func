@@ -3,10 +3,11 @@ import pytest
 from func.tokens import *
 
 
-def test_empty():
-    assert list(tokenise('')) == []
-
 @pytest.mark.parametrize('source, expected', [
+    (
+        '',
+        []
+    ),
     (
         "\t repeat 3 '\\'Two plus three\\' equals:\\n\\t\\(add\t2 '3').'  \r\n\n= \t",
         [
