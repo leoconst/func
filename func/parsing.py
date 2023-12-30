@@ -59,26 +59,30 @@ def _parse_binding(tokens):
     return BindingSyntax(name, value)
 
 def _parse_expression(tokens):
-    first = _parse_single_expression(tokens)
-    arguments = tokens.zero_or_more(_parse_single_expression)
+    branches = {
+        TokenKind.INTEGER: _accept_integer,
+        TokenKind.IDENTIFIER: _accept_identifier,
+        TokenKind.STRING: _accept_string,
+        TokenKind.OPEN_BRACKET: lambda _: _accept_bracketed_expression(tokens),
+    }
+    first = tokens.branch('an expression', branches)
+    arguments = []
+    while (argument := tokens.try_branch(branches)) is not None:
+        arguments.append(argument)
     return reduce(CallExpressionSyntax, arguments, first)
 
-def _parse_single_expression(tokens):
-    return tokens.branch('an expression',
-        _parse_integer,
-        _parse_identifier,
-        _parse_string)
+def _accept_bracketed_expression(tokens):
+    expression = _parse_expression(tokens)
+    tokens.expect(TokenKind.CLOSE_BRACKET)
+    return expression
 
-def _parse_integer(tokens):
-    integer = tokens.expect(TokenKind.INTEGER)
+def _accept_integer(integer):
     return IntegerExpressionSyntax(integer.value)
 
-def _parse_identifier(tokens):
-    identifier = tokens.expect(TokenKind.IDENTIFIER)
+def _accept_identifier(identifier):
     return IdentifierExpressionSyntax(identifier.value)
  
-def _parse_string(tokens):
-    string = tokens.expect(TokenKind.STRING)
+def _accept_string(string):
     parts = list(map(_parse_string_part, string.parts))
     return StringExpressionSyntax(parts)
 
@@ -118,16 +122,23 @@ class Tokens:
             raise self._error(describer(), token)
         return token
 
-    def branch(self, description, *branches):
-        for branch in branches:
-            result = self._try(branch)
-            if result is not None:
-                return result
-        raise self._error(description, self._get_next())
+    def branch(self, description, branches):
+        def fallback(next_token):
+            raise self._error(description, next_token)
+        return self._branch_or(branches, fallback)
 
-    def zero_or_more(self, parser):
-        while (result := self._try(parser)) is not None:
-            yield result
+    def try_branch(self, branches):
+        def fallback(next_token):
+            self._position -= 1
+            return None
+        return self._branch_or(branches, fallback)
+
+    def _branch_or(self, branches, fallback):
+        next_token = self._get_next()
+        if next_token is not _END_OF_SOURCE:
+            if (branch := branches.get(next_token.kind)) is not None:
+                return branch(next_token)
+        return fallback(next_token)
 
     def peek(self):
         try:
@@ -136,14 +147,6 @@ class Tokens:
             token = next(self._token_iterator, _END_OF_SOURCE)
             self._tokens.append(token)
         return token
-
-    def _try(self, parser):
-        saved_position = self._position
-        try:
-            return parser(self)
-        except ParseError:
-            self._position = saved_position
-            return None
 
     def _get_next(self):
         token = self.peek()
@@ -164,10 +167,12 @@ class Tokens:
 
 _TOKEN_KIND_DESCRIPTIONS = {
     TokenKind.STRING: 'a string',
-    TokenKind.INTEGER: 'an integer',
     TokenKind.IDENTIFIER: 'an identifier',
+    TokenKind.INTEGER: 'an integer',
     TokenKind.EQUALS: 'an equals symbol',
     TokenKind.NEWLINE: 'a newline',
+    TokenKind.OPEN_BRACKET: 'an opening bracket',
+    TokenKind.CLOSE_BRACKET: 'a closing bracket',
 }
 _END_OF_SOURCE = object()
 _END_OF_SOURCE_DESCRIPTION = 'end-of-source'
