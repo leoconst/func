@@ -35,6 +35,11 @@ class Integer(Expression):
 class String(Expression):
     parts: list[str|Expression]
 
+@dataclass
+class Lambda(Expression):
+    parameter: str
+    body: Expression
+
 def parse(tokens):
     tokens = Tokens(tokens)
     result = _parse_module(tokens)
@@ -63,6 +68,7 @@ def _parse_expression(tokens):
         TokenKind.INTEGER: _accept_integer,
         TokenKind.IDENTIFIER: _accept_identifier,
         TokenKind.STRING: _accept_string,
+        TokenKind.LAMBDA: lambda _: _accept_lambda(tokens),
         TokenKind.OPEN_BRACKET: lambda _: _accept_bracketed_expression(tokens),
     }
     first = tokens.branch('an expression', branches)
@@ -70,6 +76,12 @@ def _parse_expression(tokens):
     while (argument := tokens.try_branch(branches)) is not None:
         arguments.append(argument)
     return reduce(Call, arguments, first)
+
+def _accept_lambda(tokens):
+    parameter = tokens.expect(TokenKind.IDENTIFIER).value
+    tokens.expect(TokenKind.ARROW)
+    body = _parse_expression(tokens)
+    return Lambda(parameter, body)
 
 def _accept_bracketed_expression(tokens):
     expression = _parse_expression(tokens)
@@ -170,6 +182,8 @@ _TOKEN_KIND_DESCRIPTIONS = {
     TokenKind.IDENTIFIER: 'an identifier',
     TokenKind.INTEGER: 'an integer',
     TokenKind.EQUALS: 'an equals symbol',
+    TokenKind.LAMBDA: 'the beginning of a lambda',
+    TokenKind.ARROW: 'an arrow',
     TokenKind.NEWLINE: 'a newline',
     TokenKind.OPEN_BRACKET: 'an opening bracket',
     TokenKind.CLOSE_BRACKET: 'a closing bracket',

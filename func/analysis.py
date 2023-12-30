@@ -25,6 +25,11 @@ class Identifier(Expression):
     name: str
 
 @dataclass
+class Lambda(Expression):
+    parameter: str
+    body: Expression
+
+@dataclass
 class Call(Expression):
     callable_: Expression
     argument: Expression
@@ -58,6 +63,10 @@ def _analyse_expression(expression, names):
             return _analyse_identifier(name, names)
         case syntax.Call(callable_, argument):
             return _analyse_call(callable_, argument, names)
+        case syntax.Lambda(parameter, body):
+            return _analyse_lambda(parameter, body, names)
+        case _:
+            raise TypeError(f"Unknown expression: {expression}")
 
 def _analyse_identifier(name, names):
     if name not in names:
@@ -68,6 +77,10 @@ def _analyse_call(callable_, argument, names):
     return Call(
         _analyse_expression(callable_, names),
         _analyse_expression(argument, names))
+
+def _analyse_lambda(parameter, body, names):
+    all_names = {parameter, *names}
+    return Lambda(parameter, _analyse_expression(body, all_names))
 
 def _analyse_string(parts, names):
     parts = list(map(lambda part: _analyse_string_part(part, names), parts))

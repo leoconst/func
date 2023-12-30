@@ -33,6 +33,12 @@ def _get_syntax(source):
             'description': String(['Number is ', Identifier('x'), '.'])
         })
     ),
+    (
+        'func = λa -> a 7',
+        Module({
+            'func': Lambda('a', Call(Identifier('a'), Integer(7)))
+        })
+    ),
 ])
 def test_success(source, expected):
     syntax = _get_syntax(source)
@@ -44,7 +50,7 @@ main = print greeting
 greeting = 'Hello, \\(name)!'
 name = 'World'
 print = call 7777
-call = 0\
+call = λcode -> 0\
 ''').bindings
 @given(strategies.permutations(bindings))
 def test_binding_ordering_is_arbitrary(bindings):
@@ -54,11 +60,10 @@ def test_binding_ordering_is_arbitrary(bindings):
         'greeting': String(['Hello, ', Identifier('name'), '!']),
         'name': String(['World']),
         'print': Call(Identifier('call'), Integer(7777)),
-        'call': Integer(0),
+        'call': Lambda('code', Integer(0)),
     })
     actual = analyse(module)
     assert actual == expected
-
 
 def test_duplicate_binding_name():
     syntax = _get_syntax('name = 0\nname = 1')
@@ -69,6 +74,8 @@ def test_duplicate_binding_name():
     ('name = q', 'q'),
     ("main = print name\nprint = 3", 'name'),
     ("main = 'The answer is \\(answer)!'", 'answer'),
+    ('func = λrun -> it', 'it'),
+    ('func = λa -> a b', 'b'),
 ])
 def test_unbound_name(source, name):
     syntax = _get_syntax(source)
