@@ -41,6 +41,8 @@ class TokenKind(Enum):
     IDENTIFIER = auto()
     INTEGER = auto()
     EQUALS = auto()
+    LAMBDA = auto()
+    ARROW = auto()
     NEWLINE = auto()
     OPEN_BRACKET = auto()
     CLOSE_BRACKET = auto()
@@ -60,6 +62,8 @@ class _RawTokenKind(Enum):
     IDENTIFIER = r'[A-Za-z_][A-Za-z0-9_]*'
     INTEGER = r'[0-9]+'
     EQUALS = r'='
+    LAMBDA = r'\\|λ'
+    ARROW = r'->'
     NEWLINE = r'\n|\r\n'
     OPEN_BRACKET = r'\('
     CLOSE_BRACKET = r'\)'
