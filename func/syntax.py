@@ -97,7 +97,7 @@ def _accept_identifier(identifier):
 def _accept_string(tokens):
     parts = []
     while True:
-        token = tokens._get_next()
+        token = tokens.get_next()
         if token is _END_OF_SOURCE:
             raise ParseError('Unexpected end-of-source within string')
         match token.kind:
@@ -134,7 +134,7 @@ class Tokens:
             lambda: _END_OF_SOURCE_DESCRIPTION)
 
     def _expect(self, predicate, describer):
-        token = self._get_next()
+        token = self.get_next()
         if not predicate(token):
             raise self._error(describer(), token)
         return token
@@ -151,7 +151,7 @@ class Tokens:
         return self._branch_or(branches, fallback)
 
     def _branch_or(self, branches, fallback):
-        next_token = self._get_next()
+        next_token = self.get_next()
         if next_token is not _END_OF_SOURCE:
             if (branch := branches.get(next_token.kind)) is not None:
                 return branch(next_token)
@@ -165,7 +165,7 @@ class Tokens:
             self._tokens.append(token)
         return token
 
-    def _get_next(self):
+    def get_next(self):
         token = self.peek()
         self._position += 1
         return token
