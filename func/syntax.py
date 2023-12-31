@@ -67,7 +67,7 @@ def _parse_expression(tokens):
     branches = {
         TokenKind.INTEGER: _accept_integer,
         TokenKind.IDENTIFIER: _accept_identifier,
-        TokenKind.STRING: _accept_string,
+        TokenKind.STRING_DELIMITER: lambda _: _accept_string(tokens),
         TokenKind.LAMBDA: lambda _: _accept_lambda(tokens),
         TokenKind.OPEN_BRACKET: lambda _: _accept_bracketed_expression(tokens),
     }
@@ -94,18 +94,23 @@ def _accept_integer(integer):
 def _accept_identifier(identifier):
     return Identifier(identifier.value)
  
-def _accept_string(string):
-    parts = list(map(_parse_string_part, string.parts))
-    return String(parts)
-
-def _parse_string_part(part):
-    match part:
-        case str() as string:
-            return string
-        case list() as tokens:
-            return _parse_expression(Tokens(tokens))
-        case _:
-            raise TypeError(f'Unknown string part: {part}')
+def _accept_string(tokens):
+    parts = []
+    while True:
+        token = tokens._get_next()
+        if token is _END_OF_SOURCE:
+            raise ParseError('Unexpected end-of-source within string')
+        match token.kind:
+            case TokenKind.STRING_DELIMITER:
+                return String(parts)
+            case TokenKind.STRING_CONTENT:
+                parts.append(token.value)
+            case TokenKind.STRING_EXPRESSION_START:
+                expression = _parse_expression(tokens)
+                tokens.expect(TokenKind.STRING_EXPRESSION_END)
+                parts.append(expression)
+            case _:
+                raise TypeError(f'Unexpected token when parsing string: {token}')
 
 class ParseError(Exception):
     pass
@@ -178,7 +183,7 @@ class Tokens:
         return _TOKEN_KIND_DESCRIPTIONS[token_kind]
 
 _TOKEN_KIND_DESCRIPTIONS = {
-    TokenKind.STRING: 'a string',
+    TokenKind.STRING_DELIMITER: 'a string',
     TokenKind.IDENTIFIER: 'an identifier',
     TokenKind.INTEGER: 'an integer',
     TokenKind.EQUALS: 'an equals symbol',
