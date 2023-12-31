@@ -11,7 +11,9 @@ def tokenise(source):
     return _tokenise_with_context(source, context)
 
 def _tokenise_with_context(source, context):
-    for raw_kind, value in source.get_next_raw_tokens():
+    tokens = source.get_next_raw_tokens()
+    while token := next(tokens, False):
+        raw_kind, value = token
         match raw_kind:
             case _RawTokenKind.MISMATCH:
                 raise TokeniseError(f'Unexpected character: {value!r}')
@@ -25,8 +27,7 @@ def _tokenise_with_context(source, context):
         yield Token(kind, value)
         if kind == TokenKind.STRING_DELIMITER:
             yield from _tokenise_string(source)
-            yield from _tokenise_with_context(source, context)
-            return
+            tokens = source.get_next_raw_tokens()
 
 @dataclass
 class Token:
