@@ -95,18 +95,21 @@ def _accept_identifier(identifier):
     return Identifier(identifier.value)
  
 def _accept_string(tokens):
-    parts = []
+    parts = list(_parse_string_parts(tokens))
+    return String(parts)
+
+def _parse_string_parts(tokens):
     while True:
         token = tokens.get_next()
         match token.kind:
             case TokenKind.STRING_DELIMITER:
-                return String(parts)
+                return
             case TokenKind.STRING_CONTENT:
-                parts.append(token.value)
+                yield token.value
             case TokenKind.STRING_EXPRESSION_START:
                 expression = _parse_expression(tokens)
                 tokens.expect(TokenKind.STRING_EXPRESSION_END)
-                parts.append(expression)
+                yield expression
             case _:
                 raise TypeError(
                     f'Unexpected token when parsing string: {token}')
