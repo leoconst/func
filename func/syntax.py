@@ -43,7 +43,7 @@ class Lambda(Expression):
 def parse(tokens):
     tokens = Tokens(tokens)
     result = _parse_module(tokens)
-    tokens.expect_end_of_source()
+    tokens.assert_empty()
     return result
 
 def _parse_module(tokens):
@@ -98,8 +98,6 @@ def _accept_string(tokens):
     parts = []
     while True:
         token = tokens.get_next()
-        if token is _END_OF_SOURCE:
-            raise ParseError('Unexpected end-of-source within string')
         match token.kind:
             case TokenKind.STRING_DELIMITER:
                 return String(parts)
@@ -110,7 +108,8 @@ def _accept_string(tokens):
                 tokens.expect(TokenKind.STRING_EXPRESSION_END)
                 parts.append(expression)
             case _:
-                raise TypeError(f'Unexpected token when parsing string: {token}')
+                raise TypeError(
+                    f'Unexpected token when parsing string: {token}')
 
 class ParseError(Exception):
     pass
@@ -123,21 +122,16 @@ class Tokens:
         self._token_iterator = iter(token_iterable)
 
     def expect(self, token_kind):
-        return self._expect(
-            lambda token: (token is not _END_OF_SOURCE
-                and token.kind == token_kind),
-            lambda: self._describe_token_kind(token_kind))
-
-    def expect_end_of_source(self):
-        self._expect(
-            lambda token: token is _END_OF_SOURCE,
-            lambda: _END_OF_SOURCE_DESCRIPTION)
-
-    def _expect(self, predicate, describer):
         token = self.get_next()
-        if not predicate(token):
-            raise self._error(describer(), token)
+        if token.kind != token_kind:
+            description = self._describe_token_kind(token_kind)
+            raise self._error(description, token)
         return token
+
+    def assert_empty(self):
+        next_token = self.get_next()
+        if next_token is not _END_OF_SOURCE:
+            raise RuntimeError(f'Expected no more tokens but got {next_token}')
 
     def branch(self, description, branches):
         def fallback(next_token):
@@ -152,9 +146,8 @@ class Tokens:
 
     def _branch_or(self, branches, fallback):
         next_token = self.get_next()
-        if next_token is not _END_OF_SOURCE:
-            if (branch := branches.get(next_token.kind)) is not None:
-                return branch(next_token)
+        if (branch := branches.get(next_token.kind)) is not None:
+            return branch(next_token)
         return fallback(next_token)
 
     def peek(self):
@@ -171,16 +164,15 @@ class Tokens:
         return token
 
     def _error(self, description, actual):
-        return ParseError(
-            f'Expected {description}, got {self._describe_token(actual)}')
-
-    def _describe_token(self, token):
-        if token is _END_OF_SOURCE:
-            return _END_OF_SOURCE_DESCRIPTION
-        return self._describe_token_kind(token.kind)
+        actual_description = self._describe_token_kind(actual.kind)
+        return ParseError(f'Expected {description}, got {actual_description}')
 
     def _describe_token_kind(self, token_kind):
         return _TOKEN_KIND_DESCRIPTIONS[token_kind]
+
+class _EndOfSource:
+    kind = object()
+_END_OF_SOURCE = _EndOfSource()
 
 _TOKEN_KIND_DESCRIPTIONS = {
     TokenKind.STRING_DELIMITER: 'a string',
@@ -192,6 +184,5 @@ _TOKEN_KIND_DESCRIPTIONS = {
     TokenKind.NEWLINE: 'a newline',
     TokenKind.OPEN_BRACKET: 'an opening bracket',
     TokenKind.CLOSE_BRACKET: 'a closing bracket',
+    _EndOfSource.kind: 'end-of-source',
 }
-_END_OF_SOURCE = object()
-_END_OF_SOURCE_DESCRIPTION = 'end-of-source'
