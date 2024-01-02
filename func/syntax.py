@@ -47,15 +47,16 @@ def parse(tokens):
     return result
 
 def _parse_module(tokens):
-    bindings = []
+    bindings = list(_parse_module_bindings(tokens))
+    return Module(bindings)
+
+def _parse_module_bindings(tokens):
     first = True
-    while tokens.peek() is not _END_OF_SOURCE:
+    while (next_token := tokens.peek()) is not _END_OF_SOURCE:
         if not first:
             tokens.expect(TokenKind.NEWLINE)
         first = False
-        binding = _parse_binding(tokens)
-        bindings.append(binding)
-    return Module(bindings)
+        yield _parse_binding(tokens)
 
 def _parse_binding(tokens):
     name = tokens.expect(TokenKind.IDENTIFIER).value
