@@ -128,8 +128,8 @@ class Tokens:
     def expect(self, token_kind):
         token = self.get_next()
         if token.kind != token_kind:
-            description = self._describe_token_kind(token_kind)
-            raise self._error(description, token)
+            description = _describe_token_kind(token_kind)
+            raise _error(description, token)
         return token
 
     def assert_empty(self):
@@ -139,7 +139,7 @@ class Tokens:
 
     def branch(self, description, branches):
         def fallback(next_token):
-            raise self._error(description, next_token)
+            raise _error(description, next_token)
         return self._branch_or(branches, fallback)
 
     def try_branch(self, branches):
@@ -167,12 +167,12 @@ class Tokens:
         self._position += 1
         return token
 
-    def _error(self, description, actual):
-        actual_description = self._describe_token_kind(actual.kind)
-        return ParseError(f'Expected {description}, got {actual_description}')
+def _error(description, actual):
+    actual_description = _describe_token_kind(actual.kind)
+    return ParseError(f'Expected {description}, got {actual_description}')
 
-    def _describe_token_kind(self, token_kind):
-        return _TOKEN_KIND_DESCRIPTIONS[token_kind]
+def _describe_token_kind(token_kind):
+    return _TOKEN_KIND_DESCRIPTIONS[token_kind]
 
 class _EndOfSource:
     kind = object()
