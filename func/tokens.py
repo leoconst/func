@@ -126,8 +126,8 @@ class _StringContentBuilder:
         characters = self._characters
         if characters:
             content = ''.join(characters)
+            characters.clear()
             yield Token(TokenKind.STRING_CONTENT, content)
-        characters.clear()
 
 class _Source:
 
