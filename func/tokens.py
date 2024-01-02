@@ -37,8 +37,6 @@ class Token:
 class TokenKind(Enum):
     STRING_DELIMITER = auto()
     STRING_CONTENT = auto()
-    STRING_EXPRESSION_START = auto()
-    STRING_EXPRESSION_END = auto()
     IDENTIFIER = auto()
     INTEGER = auto()
     EQUALS = auto()
@@ -88,9 +86,9 @@ def _tokenise_string(source):
 
 def _add_expression_escape_part(source, content_builder):
     yield from content_builder.token()
-    yield Token(TokenKind.STRING_EXPRESSION_START, '(')
+    yield Token(TokenKind.OPEN_BRACKET, '(')
     yield from _tokenise_until_brackets_balanced(source)
-    yield Token(TokenKind.STRING_EXPRESSION_END, ')')
+    yield Token(TokenKind.CLOSE_BRACKET, ')')
 
 def _tokenise_until_brackets_balanced(source):
     context = _Context(bracket_depth=1)

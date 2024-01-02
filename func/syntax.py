@@ -109,10 +109,8 @@ def _parse_string_parts(tokens):
                 return
             case TokenKind.STRING_CONTENT:
                 yield token.value
-            case TokenKind.STRING_EXPRESSION_START:
-                expression = _parse_expression(tokens)
-                tokens.expect(TokenKind.STRING_EXPRESSION_END)
-                yield expression
+            case TokenKind.OPEN_BRACKET:
+                yield _accept_bracketed_expression(tokens)
             case _:
                 raise TypeError(
                     f'Unexpected token when parsing string: {token}')
