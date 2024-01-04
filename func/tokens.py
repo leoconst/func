@@ -72,10 +72,11 @@ def _tokenise_string(source):
     content_builder = _StringContentBuilder()
     while (head := source.get_next_character('inside string')) != _STRING_DELIMETER:
         if head == '\\':
-            head = source.get_next_character('immediately after string escape')
+            head = source.peek_next_character('immediately after string escape')
             if head == '(':
                 yield from _add_expression_escape_part(source, content_builder)
             elif head in _CHARACTER_ESCAPES:
+                source.advance_character()
                 _add_escaped_character(content_builder, head)
             else:
                 raise TokeniseError(f'Invalid escape character: {head!r}')
@@ -86,16 +87,14 @@ def _tokenise_string(source):
 
 def _add_expression_escape_part(source, content_builder):
     yield from content_builder.token()
-    yield Token(TokenKind.OPEN_BRACKET, '(')
     yield from _tokenise_until_brackets_balanced(source)
-    yield Token(TokenKind.CLOSE_BRACKET, ')')
 
 def _tokenise_until_brackets_balanced(source):
-    context = _Context(bracket_depth=1)
+    context = _Context(bracket_depth=0)
     for token in _tokenise_with_context(source, context):
+        yield token
         if context.bracket_depth <= 0:
             break
-        yield token
     else:
         raise _end_of_source_error('inside expression escape')
 
@@ -133,14 +132,19 @@ class _Source:
         self._source = source
         self._position = 0
 
-    def get_next_character(self, location):
+    def peek_next_character(self, location):
         try:
-            head = self._source[self._position]
+            return self._source[self._position]
         except IndexError:
             raise _end_of_source_error(location)
-        else:
-            self._position += 1
-            return head
+
+    def get_next_character(self, location):
+        head = self.peek_next_character(location)
+        self.advance_character()
+        return head
+
+    def advance_character(self):
+        self._position += 1
 
     def get_next_raw_tokens(self):
         remainder = self._source[self._position:]
