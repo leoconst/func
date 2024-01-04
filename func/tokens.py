@@ -65,22 +65,26 @@ _RAW_TOKEN_RE = re.compile(
 
 def _tokenise_string(source):
     content_builder = _StringContentBuilder()
-    while (head := source.get_next_character('inside string')) != _STRING_DELIMETER:
+    while True:
+        head = source.get_next_character('inside string')
+        if head == _STRING_DELIMETER:
+            break
         if head == '\\':
-            head = source.peek_next_character('immediately after string escape')
-            if head == '(':
-                yield from _add_expression_escape_part(source, content_builder)
-            elif head in _CHARACTER_ESCAPES:
-                source.advance_character()
-                _add_escaped_character(content_builder, head)
-            else:
-                raise TokeniseError(f'Invalid escape character: {head!r}')
+            yield from _handle_escape(source, content_builder)
         else:
             content_builder.add_character(head)
     yield from content_builder.token()
     yield Token(TokenKind.STRING_DELIMITER, "'")
 
-def _add_expression_escape_part(source, content_builder):
+def _handle_escape(source, content_builder):
+    character = source.peek_next_character('immediately after string escape')
+    if character == '(':
+        yield from _handle_expression_escape(source, content_builder)
+    else:
+        source.advance_character()
+        _handle_character_escape(content_builder, character)
+
+def _handle_expression_escape(source, content_builder):
     yield from content_builder.token()
     yield from _tokenise_until_brackets_balanced(source)
 
@@ -98,8 +102,11 @@ def _tokenise_until_brackets_balanced(source):
     else:
         raise _end_of_source_error('inside expression escape')
 
-def _add_escaped_character(content_builder, character):
-    escaped_character = _CHARACTER_ESCAPES[character]
+def _handle_character_escape(content_builder, character):
+    try:
+        escaped_character = _CHARACTER_ESCAPES[character]
+    except KeyError:
+        raise TokeniseError(f'Invalid escape character: {character!r}')
     content_builder.add_character(escaped_character)
 
 _CHARACTER_ESCAPES = {
