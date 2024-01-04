@@ -11,36 +11,63 @@ from func.tokens import *
     (
         "\t repeat 3 '\\'Two plus three\\' equals:\\n\\t\\(add\t2 '3').'  \r\n\n= \t",
         [
-            PlainToken(TokenKind.IDENTIFIER, 'repeat'),
-            PlainToken(TokenKind.INTEGER, '3'),
-            StringToken([
-                '\'Two plus three\' equals:\n\t',
-                [
-                    PlainToken(TokenKind.IDENTIFIER, 'add'),
-                    PlainToken(TokenKind.INTEGER, '2'),
-                    StringToken([
-                        '3',
-                    ]),
-                ],
-                '.'
-            ]),
-            PlainToken(TokenKind.NEWLINE, '\r\n'),
-            PlainToken(TokenKind.NEWLINE, '\n'),
-            PlainToken(TokenKind.EQUALS, '='),
+            Token(TokenKind.IDENTIFIER, 'repeat'),
+            Token(TokenKind.INTEGER, '3'),
+            Token(TokenKind.STRING_DELIMITER, "'"),
+            Token(TokenKind.STRING_CONTENT, '\'Two plus three\' equals:\n\t'),
+            Token(TokenKind.STRING_EXPRESSION_ESCAPE_START),
+            Token(TokenKind.IDENTIFIER, 'add'),
+            Token(TokenKind.INTEGER, '2'),
+            Token(TokenKind.STRING_DELIMITER, "'"),
+            Token(TokenKind.STRING_CONTENT, '3'),
+            Token(TokenKind.STRING_DELIMITER),
+            Token(TokenKind.STRING_EXPRESSION_ESCAPE_END),
+            Token(TokenKind.STRING_CONTENT, '.'),
+            Token(TokenKind.STRING_DELIMITER),
+            Token(TokenKind.NEWLINE, '\r\n'),
+            Token(TokenKind.NEWLINE, '\n'),
+            Token(TokenKind.EQUALS, '='),
         ]
     ),
     (
         '\\a -> b\nλc -> d',
         [
-            PlainToken(TokenKind.LAMBDA, '\\'),
-            PlainToken(TokenKind.IDENTIFIER, 'a'),
-            PlainToken(TokenKind.ARROW, '->'),
-            PlainToken(TokenKind.IDENTIFIER, 'b'),
-            PlainToken(TokenKind.NEWLINE, '\n'),
-            PlainToken(TokenKind.LAMBDA, 'λ'),
-            PlainToken(TokenKind.IDENTIFIER, 'c'),
-            PlainToken(TokenKind.ARROW, '->'),
-            PlainToken(TokenKind.IDENTIFIER, 'd'),
+            Token(TokenKind.LAMBDA, '\\'),
+            Token(TokenKind.IDENTIFIER, 'a'),
+            Token(TokenKind.ARROW, '->'),
+            Token(TokenKind.IDENTIFIER, 'b'),
+            Token(TokenKind.NEWLINE, '\n'),
+            Token(TokenKind.LAMBDA, 'λ'),
+            Token(TokenKind.IDENTIFIER, 'c'),
+            Token(TokenKind.ARROW, '->'),
+            Token(TokenKind.IDENTIFIER, 'd'),
+        ]
+    ),
+    (
+        "''",
+        [
+            Token(TokenKind.STRING_DELIMITER, "'"),
+            Token(TokenKind.STRING_DELIMITER),
+        ]
+    ),
+    (
+        "'\\()'",
+        [
+            Token(TokenKind.STRING_DELIMITER, "'"),
+            Token(TokenKind.STRING_EXPRESSION_ESCAPE_START),
+            Token(TokenKind.STRING_EXPRESSION_ESCAPE_END),
+            Token(TokenKind.STRING_DELIMITER),
+        ]
+    ),
+    (
+        "'hello\\()world'",
+        [
+            Token(TokenKind.STRING_DELIMITER, "'"),
+            Token(TokenKind.STRING_CONTENT, 'hello'),
+            Token(TokenKind.STRING_EXPRESSION_ESCAPE_START),
+            Token(TokenKind.STRING_EXPRESSION_ESCAPE_END),
+            Token(TokenKind.STRING_CONTENT, 'world'),
+            Token(TokenKind.STRING_DELIMITER),
         ]
     ),
 ])
@@ -62,7 +89,17 @@ def test_end_of_source_in_string(source):
     "'Hello \\(name 'key:\\(time_to_",
 ])
 def test_end_of_source_in_expression_escape(source):
-    expected_error_message = 'Unexpected end-of-source inside expression escape'
+    expected_error_message = \
+        'Unexpected end-of-source inside expression escape'
+    _expect_tokenise_error(source, expected_error_message)
+
+@pytest.mark.parametrize('source', [
+    "'\\",
+    "'Hello, \\(greeting 'name\\",
+])
+def test_end_of_source_immediately_after_string_escape(source):
+    expected_error_message = \
+        'Unexpected end-of-source immediately after string escape'
     _expect_tokenise_error(source, expected_error_message)
 
 def _expect_tokenise_error(source, expected_error_message):

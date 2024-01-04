@@ -43,22 +43,24 @@ class Lambda(Expression):
 def parse(tokens):
     tokens = Tokens(tokens)
     result = _parse_module(tokens)
-    tokens.expect_end_of_source()
+    tokens.assert_empty()
     return result
 
 def _parse_module(tokens):
-    bindings = []
+    bindings = list(_parse_module_bindings(tokens))
+    return Module(bindings)
+
+def _parse_module_bindings(tokens):
     first = True
     while tokens.peek() is not _END_OF_SOURCE:
         if not first:
             tokens.expect(TokenKind.NEWLINE)
         first = False
-        binding = _parse_binding(tokens)
-        bindings.append(binding)
-    return Module(bindings)
+        yield _parse_binding(tokens)
 
 def _parse_binding(tokens):
-    name = tokens.expect(TokenKind.IDENTIFIER).value
+    identifier = tokens.expect(TokenKind.IDENTIFIER)
+    name = identifier.value
     tokens.expect(TokenKind.EQUALS)
     value = _parse_expression(tokens)
     return Binding(name, value)
@@ -67,15 +69,17 @@ def _parse_expression(tokens):
     branches = {
         TokenKind.INTEGER: _accept_integer,
         TokenKind.IDENTIFIER: _accept_identifier,
-        TokenKind.STRING: _accept_string,
+        TokenKind.STRING_DELIMITER: lambda _: _accept_string(tokens),
         TokenKind.LAMBDA: lambda _: _accept_lambda(tokens),
         TokenKind.OPEN_BRACKET: lambda _: _accept_bracketed_expression(tokens),
     }
-    first = tokens.branch('an expression', branches)
-    arguments = []
-    while (argument := tokens.try_branch(branches)) is not None:
-        arguments.append(argument)
+    first = tokens.branch(branches, 'an expression')
+    arguments = _parse_expression_arguments(tokens, branches)
     return reduce(Call, arguments, first)
+
+def _parse_expression_arguments(tokens, branches):
+    while (argument := tokens.try_branch(branches)) is not None:
+        yield argument
 
 def _accept_lambda(tokens):
     parameter = tokens.expect(TokenKind.IDENTIFIER).value
@@ -94,91 +98,95 @@ def _accept_integer(integer):
 def _accept_identifier(identifier):
     return Identifier(identifier.value)
  
-def _accept_string(string):
-    parts = list(map(_parse_string_part, string.parts))
+def _accept_string(tokens):
+    parts = list(_parse_string_parts(tokens))
     return String(parts)
 
-def _parse_string_part(part):
-    match part:
-        case str() as string:
-            return string
-        case list() as tokens:
-            return _parse_expression(Tokens(tokens))
-        case _:
-            raise TypeError(f'Unknown string part: {part}')
+def _parse_string_parts(tokens):
+    while True:
+        token = tokens.get_next()
+        match token.kind:
+            case TokenKind.STRING_DELIMITER:
+                return
+            case TokenKind.STRING_CONTENT:
+                yield token.value
+            case TokenKind.STRING_EXPRESSION_ESCAPE_START:
+                yield _accept_string_expression_escape(tokens)
+            case _:
+                raise TypeError(f'Unexpected token in string: {token}')
+
+def _accept_string_expression_escape(tokens):
+    expression = _parse_expression(tokens)
+    tokens.expect(TokenKind.STRING_EXPRESSION_ESCAPE_END)
+    return expression
 
 class ParseError(Exception):
     pass
 
 class Tokens:
 
-    def __init__(self, token_iterable):
-        self._tokens = []
-        self._position = 0
-        self._token_iterator = iter(token_iterable)
+    def __init__(self, tokens):
+        self._tokens = tokens
+        self._next_token = None
 
     def expect(self, token_kind):
-        return self._expect(
-            lambda token: (token is not _END_OF_SOURCE
-                and token.kind == token_kind),
-            lambda: self._describe_token_kind(token_kind))
-
-    def expect_end_of_source(self):
-        self._expect(
-            lambda token: token is _END_OF_SOURCE,
-            lambda: _END_OF_SOURCE_DESCRIPTION)
-
-    def _expect(self, predicate, describer):
-        token = self._get_next()
-        if not predicate(token):
-            raise self._error(describer(), token)
+        token = self.get_next()
+        if token.kind != token_kind:
+            description = _describe_token_kind(token_kind)
+            raise _error(description, token)
         return token
 
-    def branch(self, description, branches):
-        def fallback(next_token):
-            raise self._error(description, next_token)
-        return self._branch_or(branches, fallback)
+    def assert_empty(self):
+        next_token = self.get_next()
+        if next_token is not _END_OF_SOURCE:
+            raise RuntimeError(f'Expected no more tokens but got {next_token}')
+
+    def branch(self, branches, expectation):
+        token = self.get_next()
+        def fallback():
+            raise _error(expectation, token)
+        return _try_branch(branches, token, fallback)
 
     def try_branch(self, branches):
-        def fallback(next_token):
-            self._position -= 1
-            return None
-        return self._branch_or(branches, fallback)
+        start_token = self.get_next()
+        def fallback():
+            self._next_token = start_token
+        return _try_branch(branches, start_token, fallback)
 
-    def _branch_or(self, branches, fallback):
-        next_token = self._get_next()
-        if next_token is not _END_OF_SOURCE:
-            if (branch := branches.get(next_token.kind)) is not None:
-                return branch(next_token)
-        return fallback(next_token)
+    def get_next(self):
+        if self._next_token is not None:
+            next_token = self._next_token
+            self._next_token = None
+            return next_token
+        return self._get_next_token()
 
     def peek(self):
-        try:
-            token = self._tokens[self._position]
-        except IndexError:
-            token = next(self._token_iterator, _END_OF_SOURCE)
-            self._tokens.append(token)
-        return token
+        if self._next_token is None:
+            self._next_token = self._get_next_token()
+        return self._next_token
 
-    def _get_next(self):
-        token = self.peek()
-        self._position += 1
-        return token
+    def _get_next_token(self):
+        return next(self._tokens, _END_OF_SOURCE)
 
-    def _error(self, description, actual):
-        return ParseError(
-            f'Expected {description}, got {self._describe_token(actual)}')
+def _try_branch(branches, token, fallback):
+    if (branch := branches.get(token.kind)) is not None:
+        return branch(token)
+    return fallback()
 
-    def _describe_token(self, token):
-        if token is _END_OF_SOURCE:
-            return _END_OF_SOURCE_DESCRIPTION
-        return self._describe_token_kind(token.kind)
+def _error(description, actual):
+    actual_description = _describe_token_kind(actual.kind)
+    return ParseError(f'Expected {description}, got {actual_description}')
 
-    def _describe_token_kind(self, token_kind):
-        return _TOKEN_KIND_DESCRIPTIONS[token_kind]
+def _describe_token_kind(token_kind):
+    return _TOKEN_KIND_DESCRIPTIONS[token_kind]
+
+class _EndOfSource:
+    kind = object()
+_END_OF_SOURCE = _EndOfSource()
 
 _TOKEN_KIND_DESCRIPTIONS = {
-    TokenKind.STRING: 'a string',
+    TokenKind.STRING_DELIMITER: 'a string',
+    TokenKind.STRING_EXPRESSION_ESCAPE_END: 'the end of an expression escape',
     TokenKind.IDENTIFIER: 'an identifier',
     TokenKind.INTEGER: 'an integer',
     TokenKind.EQUALS: 'an equals symbol',
@@ -187,6 +195,5 @@ _TOKEN_KIND_DESCRIPTIONS = {
     TokenKind.NEWLINE: 'a newline',
     TokenKind.OPEN_BRACKET: 'an opening bracket',
     TokenKind.CLOSE_BRACKET: 'a closing bracket',
+    _EndOfSource.kind: 'end-of-source',
 }
-_END_OF_SOURCE = object()
-_END_OF_SOURCE_DESCRIPTION = 'end-of-source'
