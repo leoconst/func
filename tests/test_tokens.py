@@ -63,6 +63,15 @@ def test_end_of_source_in_expression_escape(source):
     expected_error_message = 'Unexpected end-of-source inside expression escape'
     _expect_tokenise_error(source, expected_error_message)
 
+@pytest.mark.parametrize('source', [
+    "'\\",
+    "'Hello, \\(greeting 'name\\",
+])
+def test_end_of_source_immediately_after_string_escape(source):
+    expected_error_message = \
+        'Unexpected end-of-source immediately after string escape'
+    _expect_tokenise_error(source, expected_error_message)
+
 def _expect_tokenise_error(source, expected_error_message):
     tokens = tokenise(source)
     with pytest.raises(TokeniseError, match=expected_error_message):
