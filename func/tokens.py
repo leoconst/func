@@ -19,10 +19,15 @@ def _tokenise_with(source):
             case _RawTokenKind.IGNORED:
                 continue
         kind = TokenKind[raw_kind.name]
-        yield Token(kind, value)
+        yield _make_token(kind, value)
         if kind == TokenKind.STRING_DELIMITER:
             yield from _tokenise_string(source)
             tokens = source.get_next_raw_tokens()
+
+def _make_token(kind, value):
+    if kind in _VALUE_KINDS:
+        return Token(kind, value)
+    return Token(kind)
 
 @dataclass
 class Token:
@@ -42,6 +47,12 @@ class TokenKind(Enum):
     NEWLINE = auto()
     OPEN_BRACKET = auto()
     CLOSE_BRACKET = auto()
+
+_VALUE_KINDS = {
+    TokenKind.STRING_CONTENT,
+    TokenKind.IDENTIFIER,
+    TokenKind.INTEGER,
+}
 
 class TokeniseError(Exception):
     pass
