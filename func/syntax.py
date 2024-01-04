@@ -119,10 +119,9 @@ class ParseError(Exception):
 
 class Tokens:
 
-    def __init__(self, token_iterable):
-        self._tokens = []
-        self._position = 0
-        self._token_iterator = iter(token_iterable)
+    def __init__(self, tokens):
+        self._tokens = tokens
+        self._next_token = None
 
     def expect(self, token_kind):
         token = self.get_next()
@@ -142,8 +141,9 @@ class Tokens:
         return self._branch_or(branches, fallback)
 
     def try_branch(self, branches):
+        start_token = self.peek()
         def fallback(next_token):
-            self._position -= 1
+            self._next_token = start_token
             return None
         return self._branch_or(branches, fallback)
 
@@ -154,17 +154,19 @@ class Tokens:
         return fallback(next_token)
 
     def get_next(self):
-        token = self.peek()
-        self._position += 1
-        return token
+        if self._next_token is not None:
+            next_token = self._next_token
+            self._next_token = None
+            return next_token
+        return self._get_next_token()
 
     def peek(self):
-        try:
-            return self._tokens[self._position]
-        except IndexError:
-            token = next(self._token_iterator, _END_OF_SOURCE)
-            self._tokens.append(token)
-            return token
+        if self._next_token is None:
+            self._next_token = self._get_next_token()
+        return self._next_token
+
+    def _get_next_token(self):
+        return next(self._tokens, _END_OF_SOURCE)
 
 def _error(description, actual):
     actual_description = _describe_token_kind(actual.kind)
