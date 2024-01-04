@@ -69,7 +69,7 @@ def _parse_expression(tokens):
     branches = {
         TokenKind.INTEGER: _accept_integer,
         TokenKind.IDENTIFIER: _accept_identifier,
-        TokenKind.STRING_DELIMITER: lambda _: _accept_string(tokens),
+        TokenKind.STRING_START: lambda _: _accept_string(tokens),
         TokenKind.LAMBDA: lambda _: _accept_lambda(tokens),
         TokenKind.OPEN_BRACKET: lambda _: _accept_bracketed_expression(tokens),
     }
@@ -102,17 +102,16 @@ def _accept_string(tokens):
 
 def _parse_string_parts(tokens):
     while True:
-        token = tokens.get_next()
+        token = tokens.peek()
         match token.kind:
-            case TokenKind.STRING_DELIMITER:
+            case TokenKind.STRING_END:
+                tokens.get_next()
                 return
             case TokenKind.STRING_CONTENT:
+                tokens.get_next()
                 yield token.value
-            case TokenKind.OPEN_BRACKET:
-                yield _accept_bracketed_expression(tokens)
             case _:
-                raise TypeError(
-                    f'Unexpected token when parsing string: {token}')
+                yield _parse_expression(tokens)
 
 class ParseError(Exception):
     pass
@@ -180,7 +179,9 @@ class _EndOfSource:
 _END_OF_SOURCE = _EndOfSource()
 
 _TOKEN_KIND_DESCRIPTIONS = {
-    TokenKind.STRING_DELIMITER: 'a string',
+    TokenKind.STRING_START: 'a string',
+    TokenKind.STRING_CONTENT: 'the content of a string',
+    TokenKind.STRING_END: 'the end of a string',
     TokenKind.IDENTIFIER: 'an identifier',
     TokenKind.INTEGER: 'an integer',
     TokenKind.EQUALS: 'an equals symbol',

@@ -20,7 +20,7 @@ def _tokenise_with(source):
                 continue
         kind = TokenKind[raw_kind.name]
         yield Token(kind, value)
-        if kind == TokenKind.STRING_DELIMITER:
+        if kind == TokenKind.STRING_START:
             yield from _tokenise_string(source)
             tokens = source.get_next_raw_tokens()
 
@@ -30,8 +30,9 @@ class Token:
     value: str
 
 class TokenKind(Enum):
-    STRING_DELIMITER = auto()
+    STRING_START = auto()
     STRING_CONTENT = auto()
+    STRING_END = auto()
     IDENTIFIER = auto()
     INTEGER = auto()
     EQUALS = auto()
@@ -47,7 +48,7 @@ class TokeniseError(Exception):
 _STRING_DELIMETER = '\''
 
 class _RawTokenKind(Enum):
-    STRING_DELIMITER = _STRING_DELIMETER
+    STRING_START = _STRING_DELIMETER
     IDENTIFIER = r'[A-Za-z_][A-Za-z0-9_]*'
     INTEGER = r'[0-9]+'
     EQUALS = r'='
@@ -74,14 +75,13 @@ def _tokenise_string(source):
         else:
             content_builder.add_character(head)
     yield from content_builder.token()
-    yield Token(TokenKind.STRING_DELIMITER, "'")
+    yield Token(TokenKind.STRING_END, "'")
 
 def _handle_escape(source, content_builder):
-    character = source.peek_next_character('immediately after string escape')
+    character = source.get_next_character('immediately after string escape')
     if character == '(':
         yield from _handle_expression_escape(source, content_builder)
     else:
-        source.advance_character()
         _handle_character_escape(content_builder, character)
 
 def _handle_expression_escape(source, content_builder):
@@ -91,7 +91,6 @@ def _handle_expression_escape(source, content_builder):
 def _tokenise_until_brackets_balanced(source):
     bracket_depth = 0
     for token in _tokenise_with(source):
-        yield token
         match token.kind:
             case TokenKind.OPEN_BRACKET:
                 bracket_depth += 1
@@ -99,6 +98,7 @@ def _tokenise_until_brackets_balanced(source):
                 if bracket_depth <= 1:
                     break
                 bracket_depth -= 1
+        yield token
     else:
         raise _end_of_source_error('inside expression escape')
 
@@ -139,19 +139,13 @@ class _Source:
         self._source = source
         self._position = 0
 
-    def peek_next_character(self, location):
+    def get_next_character(self, location):
         try:
-            return self._source[self._position]
+            character = self._source[self._position]
         except IndexError:
             raise _end_of_source_error(location)
-
-    def get_next_character(self, location):
-        head = self.peek_next_character(location)
-        self.advance_character()
-        return head
-
-    def advance_character(self):
         self._position += 1
+        return character
 
     def get_next_raw_tokens(self):
         remainder = self._source[self._position:]
