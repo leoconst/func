@@ -41,6 +41,29 @@ from func.tokens import *
             Token(TokenKind.IDENTIFIER, 'd'),
         ]
     ),
+    (
+        "''",
+        [
+            Token(TokenKind.STRING_START, "'"),
+            Token(TokenKind.STRING_END, "'"),
+        ]
+    ),
+    (
+        "'\\()'",
+        [
+            Token(TokenKind.STRING_START, "'"),
+            Token(TokenKind.STRING_END, "'"),
+        ]
+    ),
+    (
+        "'hello\\()world'",
+        [
+            Token(TokenKind.STRING_START, "'"),
+            Token(TokenKind.STRING_CONTENT, 'hello'),
+            Token(TokenKind.STRING_CONTENT, 'world'),
+            Token(TokenKind.STRING_END, "'"),
+        ]
+    ),
 ])
 def test_success(source, expected):
     actual = list(tokenise(source))
