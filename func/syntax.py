@@ -74,10 +74,12 @@ def _parse_expression(tokens):
         TokenKind.OPEN_BRACKET: lambda _: _accept_bracketed_expression(tokens),
     }
     first = tokens.branch(branches, 'an expression')
-    arguments = []
-    while (argument := tokens.try_branch(branches)) is not None:
-        arguments.append(argument)
+    arguments = _parse_expression_arguments(tokens, branches)
     return reduce(Call, arguments, first)
+
+def _parse_expression_arguments(tokens, branches):
+    while (argument := tokens.try_branch(branches)) is not None:
+        yield argument
 
 def _accept_lambda(tokens):
     parameter = tokens.expect(TokenKind.IDENTIFIER).value
