@@ -7,10 +7,9 @@ from enum import Enum, auto
 
 def tokenise(source):
     source = _Source(source)
-    context = _Context()
-    return _tokenise_with_context(source, context)
+    return _tokenise_with(source)
 
-def _tokenise_with_context(source, context):
+def _tokenise_with(source):
     tokens = source.get_next_raw_tokens()
     while token := next(tokens, False):
         raw_kind, value = token
@@ -19,10 +18,6 @@ def _tokenise_with_context(source, context):
                 raise TokeniseError(f'Unexpected character: {value!r}')
             case _RawTokenKind.IGNORED:
                 continue
-            case _RawTokenKind.OPEN_BRACKET:
-                context.bracket_depth += 1
-            case _RawTokenKind.CLOSE_BRACKET:
-                context.bracket_depth -= 1
         kind = TokenKind[raw_kind.name]
         yield Token(kind, value)
         if kind == TokenKind.STRING_DELIMITER:
@@ -90,11 +85,16 @@ def _add_expression_escape_part(source, content_builder):
     yield from _tokenise_until_brackets_balanced(source)
 
 def _tokenise_until_brackets_balanced(source):
-    context = _Context(bracket_depth=0)
-    for token in _tokenise_with_context(source, context):
+    bracket_depth = 0
+    for token in _tokenise_with(source):
         yield token
-        if context.bracket_depth <= 0:
-            break
+        match token.kind:
+            case TokenKind.OPEN_BRACKET:
+                bracket_depth += 1
+            case TokenKind.CLOSE_BRACKET:
+                if bracket_depth <= 1:
+                    break
+                bracket_depth -= 1
     else:
         raise _end_of_source_error('inside expression escape')
 
@@ -153,7 +153,3 @@ class _Source:
             value = match.group()
             self._position += len(value)
             yield (kind, value)
-
-@dataclass
-class _Context:
-    bracket_depth: int = 0
