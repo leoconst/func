@@ -13,15 +13,17 @@ from func.tokens import *
         [
             Token(TokenKind.IDENTIFIER, 'repeat'),
             Token(TokenKind.INTEGER, '3'),
-            Token(TokenKind.STRING_START, "'"),
+            Token(TokenKind.STRING_DELIMITER, "'"),
             Token(TokenKind.STRING_CONTENT, '\'Two plus three\' equals:\n\t'),
+            Token(TokenKind.STRING_EXPRESSION_ESCAPE_START),
             Token(TokenKind.IDENTIFIER, 'add'),
             Token(TokenKind.INTEGER, '2'),
-            Token(TokenKind.STRING_START, "'"),
+            Token(TokenKind.STRING_DELIMITER, "'"),
             Token(TokenKind.STRING_CONTENT, '3'),
-            Token(TokenKind.STRING_END, "'"),
+            Token(TokenKind.STRING_DELIMITER),
+            Token(TokenKind.STRING_EXPRESSION_ESCAPE_END),
             Token(TokenKind.STRING_CONTENT, '.'),
-            Token(TokenKind.STRING_END, "'"),
+            Token(TokenKind.STRING_DELIMITER),
             Token(TokenKind.NEWLINE, '\r\n'),
             Token(TokenKind.NEWLINE, '\n'),
             Token(TokenKind.EQUALS, '='),
@@ -44,24 +46,28 @@ from func.tokens import *
     (
         "''",
         [
-            Token(TokenKind.STRING_START, "'"),
-            Token(TokenKind.STRING_END, "'"),
+            Token(TokenKind.STRING_DELIMITER, "'"),
+            Token(TokenKind.STRING_DELIMITER),
         ]
     ),
     (
         "'\\()'",
         [
-            Token(TokenKind.STRING_START, "'"),
-            Token(TokenKind.STRING_END, "'"),
+            Token(TokenKind.STRING_DELIMITER, "'"),
+            Token(TokenKind.STRING_EXPRESSION_ESCAPE_START),
+            Token(TokenKind.STRING_EXPRESSION_ESCAPE_END),
+            Token(TokenKind.STRING_DELIMITER),
         ]
     ),
     (
         "'hello\\()world'",
         [
-            Token(TokenKind.STRING_START, "'"),
+            Token(TokenKind.STRING_DELIMITER, "'"),
             Token(TokenKind.STRING_CONTENT, 'hello'),
+            Token(TokenKind.STRING_EXPRESSION_ESCAPE_START),
+            Token(TokenKind.STRING_EXPRESSION_ESCAPE_END),
             Token(TokenKind.STRING_CONTENT, 'world'),
-            Token(TokenKind.STRING_END, "'"),
+            Token(TokenKind.STRING_DELIMITER),
         ]
     ),
 ])

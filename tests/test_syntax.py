@@ -163,6 +163,11 @@ def test_success(source, expected):
     ('value = λa', 'an arrow', 'end-of-source'),
     ('value = λa ->', 'an expression', 'end-of-source'),
     ('λ', 'an identifier', 'the beginning of a lambda'),
+    (
+        "var = 'hello\\()world'",
+        'an expression',
+        'the end of an expression escape'
+    ),
 ])
 def test_failure(source, expectation, reality):
     tokens = tokenise(source)

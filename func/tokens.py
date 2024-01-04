@@ -20,19 +20,20 @@ def _tokenise_with(source):
                 continue
         kind = TokenKind[raw_kind.name]
         yield Token(kind, value)
-        if kind == TokenKind.STRING_START:
+        if kind == TokenKind.STRING_DELIMITER:
             yield from _tokenise_string(source)
             tokens = source.get_next_raw_tokens()
 
 @dataclass
 class Token:
     kind: TokenKind
-    value: str
+    value: str = None
 
 class TokenKind(Enum):
-    STRING_START = auto()
+    STRING_DELIMITER = auto()
     STRING_CONTENT = auto()
-    STRING_END = auto()
+    STRING_EXPRESSION_ESCAPE_START = auto()
+    STRING_EXPRESSION_ESCAPE_END = auto()
     IDENTIFIER = auto()
     INTEGER = auto()
     EQUALS = auto()
@@ -45,10 +46,10 @@ class TokenKind(Enum):
 class TokeniseError(Exception):
     pass
 
-_STRING_DELIMETER = '\''
+_STRING_DELIMITER = '\''
 
 class _RawTokenKind(Enum):
-    STRING_START = _STRING_DELIMETER
+    STRING_DELIMITER = _STRING_DELIMITER
     IDENTIFIER = r'[A-Za-z_][A-Za-z0-9_]*'
     INTEGER = r'[0-9]+'
     EQUALS = r'='
@@ -68,14 +69,14 @@ def _tokenise_string(source):
     content_builder = _StringContentBuilder()
     while True:
         head = source.get_next_character('inside string')
-        if head == _STRING_DELIMETER:
+        if head == _STRING_DELIMITER:
             break
         if head == '\\':
             yield from _handle_escape(source, content_builder)
         else:
             content_builder.add_character(head)
     yield from content_builder.token()
-    yield Token(TokenKind.STRING_END, "'")
+    yield Token(TokenKind.STRING_DELIMITER)
 
 def _handle_escape(source, content_builder):
     character = source.get_next_character('immediately after string escape')
@@ -86,7 +87,9 @@ def _handle_escape(source, content_builder):
 
 def _handle_expression_escape(source, content_builder):
     yield from content_builder.token()
+    yield Token(TokenKind.STRING_EXPRESSION_ESCAPE_START)
     yield from _tokenise_until_brackets_balanced(source)
+    yield Token(TokenKind.STRING_EXPRESSION_ESCAPE_END)
 
 def _tokenise_until_brackets_balanced(source):
     bracket_depth = 0

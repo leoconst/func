@@ -66,18 +66,14 @@ def _parse_binding(tokens):
     return Binding(name, value)
 
 def _parse_expression(tokens):
-    next_token = tokens.get_next()
-    return _accept_expression(tokens, next_token)
-
-def _accept_expression(tokens, next_token):
     branches = {
         TokenKind.INTEGER: _accept_integer,
         TokenKind.IDENTIFIER: _accept_identifier,
-        TokenKind.STRING_START: lambda _: _accept_string(tokens),
+        TokenKind.STRING_DELIMITER: lambda _: _accept_string(tokens),
         TokenKind.LAMBDA: lambda _: _accept_lambda(tokens),
         TokenKind.OPEN_BRACKET: lambda _: _accept_bracketed_expression(tokens),
     }
-    first = _branch(branches, next_token, 'an expression')
+    first = tokens.branch(branches, 'an expression')
     arguments = []
     while (argument := tokens.try_branch(branches)) is not None:
         arguments.append(argument)
@@ -108,12 +104,19 @@ def _parse_string_parts(tokens):
     while True:
         token = tokens.get_next()
         match token.kind:
-            case TokenKind.STRING_END:
+            case TokenKind.STRING_DELIMITER:
                 return
             case TokenKind.STRING_CONTENT:
                 yield token.value
+            case TokenKind.STRING_EXPRESSION_ESCAPE_START:
+                yield _accept_string_expression_escape(tokens)
             case _:
-                yield _accept_expression(tokens, token)
+                raise TypeError(f'Unexpected token in string: {token}')
+
+def _accept_string_expression_escape(tokens):
+    expression = _parse_expression(tokens)
+    tokens.expect(TokenKind.STRING_EXPRESSION_ESCAPE_END)
+    return expression
 
 class ParseError(Exception):
     pass
@@ -136,6 +139,12 @@ class Tokens:
         if next_token is not _END_OF_SOURCE:
             raise RuntimeError(f'Expected no more tokens but got {next_token}')
 
+    def branch(self, branches, expectation):
+        token = self.get_next()
+        def fallback():
+            raise _error(expectation, token)
+        return _try_branch(branches, token, fallback)
+
     def try_branch(self, branches):
         start_token = self.get_next()
         def fallback():
@@ -157,11 +166,6 @@ class Tokens:
     def _get_next_token(self):
         return next(self._tokens, _END_OF_SOURCE)
 
-def _branch(branches, token, expectation):
-    def fallback():
-        raise _error(expectation, token)
-    return _try_branch(branches, token, fallback)
-
 def _try_branch(branches, token, fallback):
     if (branch := branches.get(token.kind)) is not None:
         return branch(token)
@@ -179,9 +183,8 @@ class _EndOfSource:
 _END_OF_SOURCE = _EndOfSource()
 
 _TOKEN_KIND_DESCRIPTIONS = {
-    TokenKind.STRING_START: 'a string',
-    TokenKind.STRING_CONTENT: 'the content of a string',
-    TokenKind.STRING_END: 'the end of a string',
+    TokenKind.STRING_DELIMITER: 'a string',
+    TokenKind.STRING_EXPRESSION_ESCAPE_END: 'the end of an expression escape',
     TokenKind.IDENTIFIER: 'an identifier',
     TokenKind.INTEGER: 'an integer',
     TokenKind.EQUALS: 'an equals symbol',
