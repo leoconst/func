@@ -52,15 +52,14 @@ def _parse_module(tokens):
 
 def _parse_module_bindings(tokens):
     first = True
-    while (next_token := tokens.get_next()) is not _END_OF_SOURCE:
+    while (next_token := tokens.peek()) is not _END_OF_SOURCE:
         if not first:
-            _expect(TokenKind.NEWLINE, next_token)
-            next_token = tokens.get_next()
+            tokens.expect(TokenKind.NEWLINE)
         first = False
-        _expect(TokenKind.IDENTIFIER, next_token)
-        yield _accept_binding(tokens, next_token)
+        yield _parse_binding(tokens)
 
-def _accept_binding(tokens, identifier):
+def _parse_binding(tokens):
+    identifier = tokens.expect(TokenKind.IDENTIFIER)
     name = identifier.value
     tokens.expect(TokenKind.EQUALS)
     value = _parse_expression(tokens)
@@ -127,7 +126,9 @@ class Tokens:
 
     def expect(self, token_kind):
         token = self.get_next()
-        _expect(token_kind, token)
+        if token.kind != token_kind:
+            description = _describe_token_kind(token_kind)
+            raise _error(description, token)
         return token
 
     def assert_empty(self):
@@ -153,18 +154,17 @@ class Tokens:
         return fallback(next_token)
 
     def get_next(self):
-        try:
-            token = self._tokens[self._position]
-        except IndexError:
-            token = next(self._token_iterator, _END_OF_SOURCE)
-            self._tokens.append(token)
+        token = self.peek()
         self._position += 1
         return token
 
-def _expect(expected_kind, token):
-    if token.kind != expected_kind:
-        description = _describe_token_kind(expected_kind)
-        raise _error(description, token)
+    def peek(self):
+        try:
+            return self._tokens[self._position]
+        except IndexError:
+            token = next(self._token_iterator, _END_OF_SOURCE)
+            self._tokens.append(token)
+            return token
 
 def _error(description, actual):
     actual_description = _describe_token_kind(actual.kind)
