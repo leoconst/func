@@ -52,7 +52,7 @@ def _parse_module(tokens):
 
 def _parse_module_bindings(tokens):
     first = True
-    while (next_token := tokens.peek()) is not _END_OF_SOURCE:
+    while tokens.peek() is not _END_OF_SOURCE:
         if not first:
             tokens.expect(TokenKind.NEWLINE)
         first = False
