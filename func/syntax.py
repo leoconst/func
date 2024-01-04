@@ -66,6 +66,10 @@ def _parse_binding(tokens):
     return Binding(name, value)
 
 def _parse_expression(tokens):
+    next_token = tokens.get_next()
+    return _accept_expression(tokens, next_token)
+
+def _accept_expression(tokens, next_token):
     branches = {
         TokenKind.INTEGER: _accept_integer,
         TokenKind.IDENTIFIER: _accept_identifier,
@@ -73,7 +77,7 @@ def _parse_expression(tokens):
         TokenKind.LAMBDA: lambda _: _accept_lambda(tokens),
         TokenKind.OPEN_BRACKET: lambda _: _accept_bracketed_expression(tokens),
     }
-    first = tokens.branch('an expression', branches)
+    first = _branch(branches, next_token, 'an expression')
     arguments = []
     while (argument := tokens.try_branch(branches)) is not None:
         arguments.append(argument)
@@ -102,16 +106,14 @@ def _accept_string(tokens):
 
 def _parse_string_parts(tokens):
     while True:
-        token = tokens.peek()
+        token = tokens.get_next()
         match token.kind:
             case TokenKind.STRING_END:
-                tokens.get_next()
                 return
             case TokenKind.STRING_CONTENT:
-                tokens.get_next()
                 yield token.value
             case _:
-                yield _parse_expression(tokens)
+                yield _accept_expression(tokens, token)
 
 class ParseError(Exception):
     pass
@@ -134,23 +136,11 @@ class Tokens:
         if next_token is not _END_OF_SOURCE:
             raise RuntimeError(f'Expected no more tokens but got {next_token}')
 
-    def branch(self, description, branches):
-        def fallback(next_token):
-            raise _error(description, next_token)
-        return self._branch_or(branches, fallback)
-
     def try_branch(self, branches):
-        start_token = self.peek()
-        def fallback(next_token):
+        start_token = self.get_next()
+        def fallback():
             self._next_token = start_token
-            return None
-        return self._branch_or(branches, fallback)
-
-    def _branch_or(self, branches, fallback):
-        next_token = self.get_next()
-        if (branch := branches.get(next_token.kind)) is not None:
-            return branch(next_token)
-        return fallback(next_token)
+        return _try_branch(branches, start_token, fallback)
 
     def get_next(self):
         if self._next_token is not None:
@@ -166,6 +156,16 @@ class Tokens:
 
     def _get_next_token(self):
         return next(self._tokens, _END_OF_SOURCE)
+
+def _branch(branches, token, expectation):
+    def fallback():
+        raise _error(expectation, token)
+    return _try_branch(branches, token, fallback)
+
+def _try_branch(branches, token, fallback):
+    if (branch := branches.get(token.kind)) is not None:
+        return branch(token)
+    return fallback()
 
 def _error(description, actual):
     actual_description = _describe_token_kind(actual.kind)
