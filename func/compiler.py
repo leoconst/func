@@ -17,7 +17,7 @@ def get_main(module):
 def compile_expression(expression):
     match expression:
         case Call():
-            yield from compile_call(expression)
+            return compile_call(expression)
         case _:
             CompilationError(f'Unsupported expression type: {expression}')
 
