@@ -4,12 +4,15 @@ from .analysis import *
 
 
 def compile_(module):
-    try:
-        main = module.bindings['main']
-    except KeyError:
-        raise CompilationError('No main binding defined')
+    main = get_main(module)
     units = compile_expression(main)
     return list(units)
+
+def get_main(module):
+    try:
+        return module.bindings['main']
+    except KeyError:
+        raise CompilationError('No main binding defined')
 
 def compile_expression(expression):
     match expression:
