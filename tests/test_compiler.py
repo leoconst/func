@@ -4,10 +4,21 @@ from func.compiler import *
 from func.analysis import *
 
 
-def test_success():
-    module = Module({
+@pytest.mark.parametrize('module', [
+    Module({
         'main': Call(Identifier('print'), Integer(3)),
-    })
+    }),
+    Module({
+        'x': Integer(3),
+        'main': Call(Identifier('print'), Identifier('x')),
+    }),
+    Module({
+        'x': Integer(3),
+        'show': Identifier('print'),
+        'main': Call(Identifier('show'), Identifier('x')),
+    }),
+])
+def test_success(module):
     expected = [
         Opcode.PUSH,
         3,
