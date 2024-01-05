@@ -30,6 +30,27 @@ from func.analysis import *
             Opcode.PRINT,
         ]
     ),
+    (
+        Module({
+            'main': Call(
+                Identifier('print'),
+                Call(Identifier('add1'), Identifier('x'))
+            ),
+            'x': Call(Identifier('add1'), Integer(40)),
+            'add1': Call(Identifier('add'), Integer(1)),
+        }),
+        [
+            Opcode.PUSH,
+            40,
+            Opcode.PUSH,
+            1,
+            Opcode.ADD,
+            Opcode.PUSH,
+            1,
+            Opcode.ADD,
+            Opcode.PRINT,
+        ]
+    ),
 ])
 def test_success(module, expected):
     actual = compile_(module)
