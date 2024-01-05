@@ -14,5 +14,5 @@ def test(capsys):
         Opcode.ADD,
         Opcode.PRINT,
     ])
-    out, _ = capsys.readouterr()
-    assert out == '42\n'
+    captured = capsys.readouterr()
+    assert captured.out == '42\n'

@@ -37,15 +37,15 @@ class Call(Expression):
 class AnalysisError(Exception):
     pass
 
-def analyse(module):
+def analyse(module, additional_names=()):
     bindings = module.bindings
-    names = _analyse_names(bindings)
+    names = _analyse_names(bindings, additional_names)
     bindings = {binding.name: _analyse_expression(binding.value, names)
         for binding in bindings}
     return Module(bindings)
 
-def _analyse_names(bindings):
-    names = set()
+def _analyse_names(bindings, additional_names):
+    names = set(additional_names)
     for binding in bindings:
         name = binding.name
         if name in names:
