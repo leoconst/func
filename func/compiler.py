@@ -5,17 +5,17 @@ from .analysis import *
 
 def compile_(module):
     bindings = {**module.bindings, **_BUILTINS}
-    main = get_main(bindings)
+    main = _get_main(bindings)
     units = compile_expression(main, bindings)
     return list(units)
 
-def get_main(bindings):
+def _get_main(bindings):
     try:
         return bindings['main']
     except KeyError:
         raise CompilationError('No main binding defined')
 
-def dereference_identifiers(expression, bindings):
+def _dereference_identifiers(expression, bindings):
     while isinstance(expression, Identifier):
         name = expression.name
         try:
@@ -25,38 +25,38 @@ def dereference_identifiers(expression, bindings):
     return expression
 
 def compile_expression(expression, bindings):
-    match dereference_identifiers(expression, bindings):
+    match _dereference_identifiers(expression, bindings):
         case Call():
-            return compile_call(expression, bindings)
+            return _compile_call(expression, bindings)
         case _:
             CompilationError(f'Unsupported expression type: {expression}')
 
-def compile_identifier(identifier, bindings):
+def _compile_identifier(identifier, bindings):
     value = bindings[identifier.value]
     return compile_expression(value)
 
-def compile_call(call, bindings):
-    argument = dereference_identifiers(call.argument, bindings)
-    yield from compile_argument(argument, bindings)
-    callable_ = dereference_identifiers(call.callable_, bindings)
-    yield from compile_callable(callable_, bindings)
+def _compile_call(call, bindings):
+    argument = _dereference_identifiers(call.argument, bindings)
+    yield from _compile_argument(argument, bindings)
+    callable_ = _dereference_identifiers(call.callable_, bindings)
+    yield from _compile_callable(callable_, bindings)
 
-def compile_callable(expression, bindings):
+def _compile_callable(expression, bindings):
     match expression:
         case list() as raw:
             return raw
         case Call():
-            return compile_call(expression, bindings)
+            return _compile_call(expression, bindings)
         case _:
             raise CompilationError(f'Unsupported callable type: {expression}')
 
-def compile_argument(expression, bindings):
+def _compile_argument(expression, bindings):
     match expression:
         case Integer(value):
             yield Opcode.PUSH
             yield value
         case Call():
-            yield from compile_call(expression, bindings)
+            yield from _compile_call(expression, bindings)
         case _:
             raise CompilationError(f'Unsupported argument type: {expression}')
 
