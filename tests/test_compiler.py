@@ -4,6 +4,18 @@ from func.compiler import *
 from func.analysis import *
 
 
+def test_success():
+    module = Module({
+        'main': Call(Identifier('print'), Integer(3)),
+    })
+    expected = [
+        Opcode.PUSH,
+        3,
+        Opcode.PRINT,
+    ]
+    actual = compile_(module)
+    assert actual == expected
+
 @pytest.mark.parametrize('module', [
     Module({}),
     Module({
