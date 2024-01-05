@@ -4,6 +4,37 @@ from func.compiler import *
 from func.analysis import *
 
 
+@pytest.mark.parametrize('module, expected', [
+    (
+        Module({
+            'main': Call(
+                Identifier('print'),
+                Identifier('value')
+            ),
+            'value': Call(
+                Call(
+                    Identifier('add'),
+                    Identifier('x')
+                ),
+                Identifier('y')
+            ),
+            'x': Integer(3),
+            'y': Integer(4),
+        }),
+        [
+            Opcode.PUSH,
+            4,
+            Opcode.PUSH,
+            3,
+            Opcode.ADD,
+            Opcode.PRINT,
+        ]
+    ),
+])
+def test_success(module, expected):
+    actual = compile_(module)
+    assert actual == expected
+    
 @pytest.mark.parametrize('module', [
     Module({
         'main': Call(Identifier('print'), Integer(3)),
@@ -18,14 +49,13 @@ from func.analysis import *
         'main': Call(Identifier('show'), Identifier('x')),
     }),
 ])
-def test_success(module):
+def test_identifier_dereferencing(module):
     expected = [
         Opcode.PUSH,
         3,
         Opcode.PRINT,
     ]
-    actual = compile_(module)
-    assert actual == expected
+    test_success(module, expected)
 
 @pytest.mark.parametrize('module', [
     Module({}),

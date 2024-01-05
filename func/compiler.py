@@ -17,8 +17,9 @@ def get_main(bindings):
 
 def dereference_identifiers(expression, bindings):
     while isinstance(expression, Identifier):
+        name = expression.name
         try:
-            expression = bindings[expression.name]
+            expression = bindings[name]
         except KeyError:
             raise CompilationError(f'Undefined binding: {name}')
     return expression
@@ -36,29 +37,41 @@ def compile_identifier(identifier, bindings):
 
 def compile_call(call, bindings):
     argument = dereference_identifiers(call.argument, bindings)
-    yield from compile_argument(argument)
+    yield from compile_argument(argument, bindings)
     callable_ = dereference_identifiers(call.callable_, bindings)
-    yield from compile_callable(callable_)
+    yield from compile_callable(callable_, bindings)
 
-def compile_callable(expression):
-    return expression
+def compile_callable(expression, bindings):
+    match expression:
+        case list() as raw:
+            return raw
+        case Call():
+            return compile_call(expression, bindings)
+        case _:
+            raise CompilationError(f'Unsupported callable type: {expression}')
 
-def compile_argument(expression):
+def compile_argument(expression, bindings):
     match expression:
         case Integer(value):
             yield Opcode.PUSH
             yield value
+        case Call():
+            yield from compile_call(expression, bindings)
         case _:
             raise CompilationError(f'Unsupported argument type: {expression}')
 
 class Opcode(Enum):
     PUSH = auto()
+    ADD = auto()
     PRINT = auto()
 
 _BUILTINS = {
     'print': [
         Opcode.PRINT,
     ],
+    'add': [
+        Opcode.ADD,
+    ]
 }
 
 class CompilationError(Exception):
