@@ -3,6 +3,13 @@ import pytest
 import func
 
 
+def test_run_file(capsys):
+    path = 'examples/example.func'
+    expected_output = '42\n'
+    func.run_file(path)
+    captured = capsys.readouterr()
+    assert captured.out == expected_output
+
 @pytest.mark.parametrize('source, expected_output', [
     (
         '''\
@@ -20,6 +27,6 @@ add1 = add 1\
     ),
 ])
 def test_run(capsys, source, expected_output):
-    func.run(source)
+    func.run_source(source)
     captured = capsys.readouterr()
     assert captured.out == expected_output

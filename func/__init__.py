@@ -5,7 +5,12 @@ from .syntax import parse
 from .tokens import tokenise
 
 
-def run(source):
+def run_file(path):
+    with open(path) as file:
+        source = file.read()
+        run_source(source)
+
+def run_source(source):
     tokens = tokenise(source)
     syntax = parse(tokens)
     module = analyse(syntax, BUILTINS)
