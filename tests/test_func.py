@@ -4,7 +4,7 @@ import func
 
 
 def test_run_file(capsys):
-    path = 'examples/example.func'
+    path = 'examples/the_answer.func'
     expected_output = '42\n'
     func.run_file(path)
     captured = capsys.readouterr()
