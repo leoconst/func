@@ -4,7 +4,7 @@ from .analysis import *
 
 
 def compile_(module):
-    bindings = {**module.bindings, **_BUILTINS}
+    bindings = {**module.bindings, **BUILTINS}
     main = _get_main(bindings)
     units = compile_expression(main, bindings)
     return list(units)
@@ -65,7 +65,7 @@ class Opcode(Enum):
     ADD = auto()
     PRINT = auto()
 
-_BUILTINS = {
+BUILTINS = {
     'print': [
         Opcode.PRINT,
     ],
