@@ -64,6 +64,7 @@ class Opcode(Enum):
     PUSH = auto()
     ADD = auto()
     PRINT = auto()
+    INTEGER_TO_STRING = auto()
 
 BUILTINS = {
     'print': [

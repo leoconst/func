@@ -1,3 +1,5 @@
+from array import array
+
 from .compiler import Opcode
 
 
@@ -10,7 +12,8 @@ class _VirtualMachine:
     def __init__(self, program):
         self._program = program
         self._program_pointer = 0
-        self._stack = []   
+        self._stack = []
+        self._heap = array('B')
 
     def run(self):
         while (opcode := self._next()) is not None:
@@ -29,6 +32,15 @@ class _VirtualMachine:
             case Opcode.PRINT:
                 value = self._pop()
                 print(value)
+            case Opcode.INTEGER_TO_STRING:
+                number = self._pop()
+                address = len(self._heap)
+                string = str(number)
+                raw = string.encode('utf8')
+                length = len(raw)
+                self._heap.append(length)
+                self._heap.extend(raw)
+                self._push(address)
             case _:
                 raise ValueError(f'Unknown opcode: {opcode}')
 
