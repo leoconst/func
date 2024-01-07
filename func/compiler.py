@@ -62,6 +62,7 @@ def _compile_argument(expression, bindings):
 
 class Opcode(Enum):
     PUSH = auto()
+    SET = auto()
     ADD = auto()
     PRINT = auto()
     INTEGER_TO_STRING = auto()

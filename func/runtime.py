@@ -24,6 +24,14 @@ class _VirtualMachine:
             case Opcode.PUSH:
                 value = self._next()
                 self._push(value)
+            case Opcode.SET:
+                address = len(self._heap)
+                length = self._next()
+                self._heap.append(length)
+                for _ in range(length):
+                    value = self._next()
+                    self._heap.append(value)
+                self._push(address)
             case Opcode.ADD:
                 first = self._pop()
                 second = self._pop()
