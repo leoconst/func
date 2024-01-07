@@ -12,6 +12,7 @@ def test(capsys):
         Opcode.PUSH,
         1,
         Opcode.ADD,
+        Opcode.INTEGER_TO_STRING,
         Opcode.PRINT,
     ])
     captured = capsys.readouterr()

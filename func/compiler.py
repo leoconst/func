@@ -70,9 +70,12 @@ BUILTINS = {
     'print': [
         Opcode.PRINT,
     ],
+    'integer_to_string': [
+        Opcode.INTEGER_TO_STRING,
+    ],
     'add': [
         Opcode.ADD,
-    ]
+    ],
 }
 
 class CompilationError(Exception):

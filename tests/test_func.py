@@ -13,13 +13,14 @@ def test_run_file(capsys):
 @pytest.mark.parametrize('source, expected_output', [
     (
 '''\
-main = print 0\
+main = print (integer_to_string 0)\
 ''',
         '0\n'
     ),
     (
 '''\
-main = print (add1 x)
+main = print answer
+answer = integer_to_string (add1 x)
 x = add1 40
 add1 = add 1\
 ''',

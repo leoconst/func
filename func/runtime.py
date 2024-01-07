@@ -30,8 +30,13 @@ class _VirtualMachine:
                 result = first + second
                 self._push(result)
             case Opcode.PRINT:
-                value = self._pop()
-                print(value)
+                address = self._pop()
+                length = self._heap[address]
+                start = address + 1
+                end = start + length
+                raw = bytes(self._heap[start:end])
+                string = raw.decode('utf8')
+                print(string)
             case Opcode.INTEGER_TO_STRING:
                 number = self._pop()
                 address = len(self._heap)
