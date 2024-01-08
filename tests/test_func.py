@@ -3,9 +3,12 @@ import pytest
 import func
 
 
-def test_run_file(capsys):
-    path = 'examples/the_answer.func'
-    expected_output = '42\n'
+@pytest.mark.parametrize('file_name, expected_output', [
+    ('the_answer.func', '42\n'),
+    ('hello_world.func', 'Hello, world!\n')
+])
+def test_run_file(capsys, file_name, expected_output):
+    path = f'examples/{file_name}'
     func.run_file(path)
     captured = capsys.readouterr()
     assert captured.out == expected_output
@@ -25,12 +28,6 @@ x = add1 40
 add1 = add 1\
 ''',
         '42\n',
-    ),
-    (
-'''\
-main = print 'Hello!'\
-''',
-        'Hello!\n',
     ),
     (
 '''\
