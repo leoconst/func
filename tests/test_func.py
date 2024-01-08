@@ -13,17 +13,37 @@ def test_run_file(capsys):
 @pytest.mark.parametrize('source, expected_output', [
     (
 '''\
-main = print 0\
+main = print (integer_to_string 0)\
 ''',
         '0\n'
     ),
     (
 '''\
-main = print (add1 x)
+main = print answer
+answer = integer_to_string (add1 x)
 x = add1 40
 add1 = add 1\
 ''',
         '42\n',
+    ),
+    (
+'''\
+main = print 'Hello!'\
+''',
+        'Hello!\n',
+    ),
+    (
+'''\
+main = print text
+text = 'You said:\\n\\t\\'Anyone there?\\''\
+''',
+        "You said:\n\t'Anyone there?'\n"
+    ),
+    (
+'''\
+main = print ''\
+''',
+        '\n'
     ),
 ])
 def test_run(capsys, source, expected_output):

@@ -55,23 +55,45 @@ def _compile_argument(expression, bindings):
         case Integer(value):
             yield Opcode.PUSH
             yield value
+        case String():
+            value = _extract_string(expression.parts)
+            raw = value.encode('utf8')
+            length = len(raw)
+            yield Opcode.SET
+            yield length
+            yield from raw
         case Call():
             yield from _compile_call(expression, bindings)
         case _:
             raise CompilationError(f'Unsupported argument type: {expression}')
 
+def _extract_string(parts):
+    match parts:
+        case []:
+            return ''
+        case [str() as content]:
+            return content
+        case _:
+            raise CompilationError(
+                'String expression escapes are not supported')
+
 class Opcode(Enum):
     PUSH = auto()
+    SET = auto()
     ADD = auto()
     PRINT = auto()
+    INTEGER_TO_STRING = auto()
 
 BUILTINS = {
     'print': [
         Opcode.PRINT,
     ],
+    'integer_to_string': [
+        Opcode.INTEGER_TO_STRING,
+    ],
     'add': [
         Opcode.ADD,
-    ]
+    ],
 }
 
 class CompilationError(Exception):
