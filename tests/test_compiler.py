@@ -61,6 +61,27 @@ from func.analysis import *
             Opcode.PRINT,
         ]
     ),
+    (
+        Module({
+            'main': Call(Identifier('print'), String(['FUNC'])),
+        }),
+        [
+            Opcode.SET,
+            4,
+            *b'FUNC',
+            Opcode.PRINT,
+        ]
+    ),
+    (
+        Module({
+            'main': Call(Identifier('print'), String([])),
+        }),
+        [
+            Opcode.SET,
+            0,
+            Opcode.PRINT,
+        ]
+    ),
 ])
 def test_success(module, expected):
     actual = compile_(module)

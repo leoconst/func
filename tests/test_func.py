@@ -26,6 +26,25 @@ add1 = add 1\
 ''',
         '42\n',
     ),
+    (
+'''\
+main = print 'Hello!'\
+''',
+        'Hello!\n',
+    ),
+    (
+'''\
+main = print text
+text = 'You said:\\n\\t\\'Anyone there?\\''\
+''',
+        "You said:\n\t'Anyone there?'\n"
+    ),
+    (
+'''\
+main = print ''\
+''',
+        '\n'
+    ),
 ])
 def test_run(capsys, source, expected_output):
     func.run_source(source)
