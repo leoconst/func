@@ -6,7 +6,7 @@ from .analysis import *
 def compile_(module):
     bindings = {**module.bindings, **BUILTINS}
     main = _get_main(bindings)
-    units = compile_expression(main, bindings)
+    units = _compile_expression(main, bindings)
     return list(units)
 
 def _get_main(bindings):
@@ -24,7 +24,7 @@ def _dereference_identifiers(expression, bindings):
             raise CompilationError(f'Undefined binding: {name}')
     return expression
 
-def compile_expression(expression, bindings):
+def _compile_expression(expression, bindings):
     match _dereference_identifiers(expression, bindings):
         case Call():
             return _compile_call(expression, bindings)
@@ -33,7 +33,7 @@ def compile_expression(expression, bindings):
 
 def _compile_identifier(identifier, bindings):
     value = bindings[identifier.value]
-    return compile_expression(value)
+    return _compile_expression(value)
 
 def _compile_call(call, bindings):
     argument = _dereference_identifiers(call.argument, bindings)
