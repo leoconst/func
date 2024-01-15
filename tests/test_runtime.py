@@ -31,10 +31,10 @@ from func.runtime import execute
     ),
     (
         [
-            Opcode.PUSH, 6,
-            Opcode.CALL, 7, # factorial
-            Opcode.INTEGER_TO_STRING,
-            Opcode.PRINT,
+            Opcode.PUSH, 6, # [6]
+            Opcode.CALL, 7, # factorial [6!]
+            Opcode.INTEGER_TO_STRING, # [0] b'720'
+            Opcode.PRINT, # [] b'720'
             Opcode.END,
             # factorial: [n]
             Opcode.COPY, # [n, n]
