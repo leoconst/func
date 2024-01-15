@@ -45,24 +45,15 @@ class _VirtualMachine:
                     self._heap.append(value)
                 self._push(address)
             case Opcode.ADD:
-                first = self._pop()
-                second = self._pop()
-                result = first + second
-                self._push(result)
+                self._binary_operation(lambda first, second: first + second)
             case Opcode.MULTIPLY:
-                first = self._pop()
-                second = self._pop()
-                result = first*second
-                self._push(result)
+                self._binary_operation(lambda first, second: first*second)
             case Opcode.DECREMENT:
                 value = self._pop()
                 value -= 1
                 self._push(value)
             case Opcode.LESS_THAN_OR_EQUAL:
-                first = self._pop()
-                second = self._pop()
-                result = first <= second
-                self._push(result)
+                self._binary_operation(lambda first, second: first <= second)
             case Opcode.JUMP_IF:
                 condition = self._pop()
                 address = self._next()
@@ -109,3 +100,9 @@ class _VirtualMachine:
 
     def _pop(self):
         return self._stack.pop()
+
+    def _binary_operation(self, operation):
+        first = self._pop()
+        second = self._pop()
+        result = operation(first, second)
+        self._push(result)
