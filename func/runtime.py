@@ -14,6 +14,7 @@ class _VirtualMachine:
         self._program_pointer = 0
         self._stack = []
         self._heap = array('B')
+        self._call_stack = []
 
     def run(self):
         while (opcode := self._next()) is not None:
@@ -21,9 +22,20 @@ class _VirtualMachine:
 
     def _advance(self, opcode):
         match opcode:
+            case Opcode.END:
+                self._program_pointer = len(self._program)
             case Opcode.PUSH:
                 value = self._next()
                 self._push(value)
+            case Opcode.COPY:
+                value = self._pop()
+                self._push(value)
+                self._push(value)
+            case Opcode.MOVE:
+                value = self._pop()
+                index = self._next()
+                end_index = len(self._stack) - index
+                self._stack.insert(end_index, value)
             case Opcode.SET:
                 address = len(self._heap)
                 length = self._next()
@@ -37,6 +49,33 @@ class _VirtualMachine:
                 second = self._pop()
                 result = first + second
                 self._push(result)
+            case Opcode.MULTIPLY:
+                first = self._pop()
+                second = self._pop()
+                result = first*second
+                self._push(result)
+            case Opcode.DECREMENT:
+                value = self._pop()
+                value -= 1
+                self._push(value)
+            case Opcode.LESS_THAN_OR_EQUAL:
+                first = self._pop()
+                second = self._pop()
+                result = first <= second
+                self._push(result)
+            case Opcode.JUMP_IF:
+                condition = self._pop()
+                address = self._next()
+                if condition:
+                    self._program_pointer = address
+            case Opcode.CALL:
+                new_location = self._next()
+                return_location = self._program_pointer
+                self._call_stack.append(return_location)
+                self._program_pointer = new_location
+            case Opcode.RETURN:
+                previous_location = self._call_stack.pop()
+                self._program_pointer = previous_location
             case Opcode.PRINT:
                 address = self._pop()
                 length = self._heap[address]

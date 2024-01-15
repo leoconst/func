@@ -78,9 +78,18 @@ def _extract_string(parts):
                 'String expression escapes are not supported')
 
 class Opcode(Enum):
+    END = auto()
     PUSH = auto()
+    COPY = auto()
+    MOVE = auto()
     SET = auto()
     ADD = auto()
+    MULTIPLY = auto()
+    DECREMENT = auto()
+    LESS_THAN_OR_EQUAL = auto()
+    JUMP_IF = auto()
+    CALL = auto()
+    RETURN = auto()
     PRINT = auto()
     INTEGER_TO_STRING = auto()
 
