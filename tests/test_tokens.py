@@ -70,6 +70,17 @@ from func.tokens import *
             Token(TokenKind.STRING_DELIMITER),
         ]
     ),
+    (
+        'if iffley then athens else welse',
+        [
+            Token(TokenKind.IF),
+            Token(TokenKind.IDENTIFIER, 'iffley'),
+            Token(TokenKind.THEN),
+            Token(TokenKind.IDENTIFIER, 'athens'),
+            Token(TokenKind.ELSE),
+            Token(TokenKind.IDENTIFIER, 'welse'),
+        ]
+    ),
 ])
 def test_success(source, expected):
     actual = list(tokenise(source))
