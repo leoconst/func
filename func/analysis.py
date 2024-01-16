@@ -34,6 +34,12 @@ class Call(Expression):
     callable_: Expression
     argument: Expression
 
+@dataclass
+class IfElse(Expression):
+    condition: Expression
+    true: Expression
+    false: Expression
+
 class AnalysisError(Exception):
     pass
 
@@ -65,6 +71,8 @@ def _analyse_expression(expression, names):
             return _analyse_call(callable_, argument, names)
         case syntax.Lambda(parameter, body):
             return _analyse_lambda(parameter, body, names)
+        case syntax.IfElse(condition, true, false):
+            return _analyse_if_else(condition, true, false, names)
         case _:
             raise TypeError(f"Unknown expression: {expression}")
 
@@ -81,6 +89,12 @@ def _analyse_call(callable_, argument, names):
 def _analyse_lambda(parameter, body, names):
     all_names = {parameter, *names}
     return Lambda(parameter, _analyse_expression(body, all_names))
+
+def _analyse_if_else(condition, true, false, names):
+    return IfElse(
+        _analyse_expression(condition, names),
+        _analyse_expression(true, names),
+        _analyse_expression(false, names))
 
 def _analyse_string(parts, names):
     parts = list(map(lambda part: _analyse_string_part(part, names), parts))
