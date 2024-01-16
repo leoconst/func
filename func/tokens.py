@@ -35,6 +35,9 @@ class Token:
     value: str = None
 
 class TokenKind(Enum):
+    IF = auto()
+    THEN = auto()
+    ELSE = auto()
     STRING_DELIMITER = auto()
     STRING_CONTENT = auto()
     STRING_EXPRESSION_ESCAPE_START = auto()
@@ -60,6 +63,9 @@ class TokeniseError(Exception):
 _STRING_DELIMITER = '\''
 
 class _RawTokenKind(Enum):
+    IF = r'\bif\b'
+    THEN = r'\bthen\b'
+    ELSE = r'\belse\b'
     STRING_DELIMITER = _STRING_DELIMITER
     IDENTIFIER = r'[A-Za-z_][A-Za-z0-9_]*'
     INTEGER = r'[0-9]+'
