@@ -129,7 +129,39 @@ from func.tokens import tokenise
                     'a',
                     Identifier('b')
                 )
-            )
+            ),
+        ])
+    ),
+    (
+        'conditional = if condition then truth else lies',
+        Module([
+            Binding(
+                'conditional',
+                IfElse(
+                    Identifier('condition'),
+                    Identifier('truth'),
+                    Identifier('lies')
+                )
+            ),
+        ])
+    ),
+    (
+        "conditional = if yes then 'yes' else repeat 'no' 3",
+        Module([
+            Binding(
+                'conditional',
+                IfElse(
+                    Identifier('yes'),
+                    String(['yes']),
+                    Call(
+                        Call(
+                            Identifier('repeat'),
+                            String(['no'])
+                        ),
+                        Integer('3')
+                    )
+                )
+            ),
         ])
     ),
 ])

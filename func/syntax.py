@@ -40,6 +40,12 @@ class Lambda(Expression):
     parameter: str
     body: Expression
 
+@dataclass
+class IfElse(Expression):
+    condition: Expression
+    true: Expression
+    false: Expression
+
 def parse(tokens):
     tokens = Tokens(tokens)
     result = _parse_module(tokens)
@@ -71,6 +77,7 @@ def _parse_expression(tokens):
         TokenKind.IDENTIFIER: _accept_identifier,
         TokenKind.STRING_DELIMITER: lambda _: _accept_string(tokens),
         TokenKind.LAMBDA: lambda _: _accept_lambda(tokens),
+        TokenKind.IF: lambda _: _accept_if_else(tokens),
         TokenKind.OPEN_BRACKET: lambda _: _accept_bracketed_expression(tokens),
     }
     first = tokens.branch(branches, 'an expression')
@@ -86,6 +93,14 @@ def _accept_lambda(tokens):
     tokens.expect(TokenKind.ARROW)
     body = _parse_expression(tokens)
     return Lambda(parameter, body)
+
+def _accept_if_else(tokens):
+    condition = _parse_expression(tokens)
+    tokens.expect(TokenKind.THEN)
+    true = _parse_expression(tokens)
+    tokens.expect(TokenKind.ELSE)
+    false = _parse_expression(tokens)
+    return IfElse(condition, true, false)
 
 def _accept_bracketed_expression(tokens):
     expression = _parse_expression(tokens)
