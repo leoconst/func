@@ -1,4 +1,4 @@
 main = print answer
 answer = integer_to_string (add1 x)
-x = add1 40
+x = add (add 10 25) (add1 5)
 add1 = add 1
