@@ -5,7 +5,8 @@ import func
 
 @pytest.mark.parametrize('file_name, expected_output', [
     ('the_answer.func', '42\n'),
-    ('hello_world.func', 'Hello, world!\n')
+    ('hello_world.func', 'Hello, world!\n'),
+    ('conditional.func', 'Okay\n'),
 ])
 def test_run_file(capsys, file_name, expected_output):
     path = f'examples/{file_name}'

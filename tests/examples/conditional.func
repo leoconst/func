@@ -1,0 +1,3 @@
+main = print response
+answer = 1
+response = if answer then 'Okay' else 'Oh...'
