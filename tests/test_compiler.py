@@ -84,6 +84,25 @@ from func.analysis import *
     ),
     (
         Module({
+            'main': IfElse(Integer(1), String(['Yes']), String(['No'])),
+        }),
+        [
+            Opcode.PUSH,
+            1,
+            Opcode.JUMP_IF,
+            6,
+            Opcode.SET,
+            2,
+            *b'No',
+            Opcode.JUMP,
+            5,
+            Opcode.SET,
+            3,
+            *b'Yes',
+        ]
+    ),
+    (
+        Module({
             'main': IfElse(Integer(1), Integer(3), Integer(4)),
         }),
         [
