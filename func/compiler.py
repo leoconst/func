@@ -31,10 +31,6 @@ def _compile_expression(expression, bindings):
         case _:
             CompilationError(f'Unsupported expression type: {expression}')
 
-def _compile_identifier(identifier, bindings):
-    value = bindings[identifier.value]
-    return _compile_expression(value)
-
 def _compile_call(call, bindings):
     argument = _dereference_identifiers(call.argument, bindings)
     yield from _compile_argument(argument, bindings)
