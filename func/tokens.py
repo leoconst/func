@@ -18,11 +18,14 @@ def _tokenise_with(source):
                 raise TokeniseError(f'Unexpected character: {value!r}')
             case _RawTokenKind.IGNORED:
                 continue
-        kind = TokenKind[raw_kind.name]
-        yield _make_token(kind, value)
-        if kind == TokenKind.STRING_DELIMITER:
-            yield from _tokenise_string(source)
-            tokens = source.get_next_raw_tokens()
+            case _RawTokenKind.IDENTIFIER if kind := _KEYWORDS.get(value):
+                yield Token(kind)
+            case _:
+                kind = TokenKind[raw_kind.name]
+                yield _make_token(kind, value)
+                if kind == TokenKind.STRING_DELIMITER:
+                    yield from _tokenise_string(source)
+                    tokens = source.get_next_raw_tokens()
 
 def _make_token(kind, value):
     if kind in _VALUE_KINDS:
@@ -35,6 +38,9 @@ class Token:
     value: str = None
 
 class TokenKind(Enum):
+    IF = auto()
+    THEN = auto()
+    ELSE = auto()
     STRING_DELIMITER = auto()
     STRING_CONTENT = auto()
     STRING_EXPRESSION_ESCAPE_START = auto()
@@ -52,6 +58,12 @@ _VALUE_KINDS = {
     TokenKind.STRING_CONTENT,
     TokenKind.IDENTIFIER,
     TokenKind.INTEGER,
+}
+
+_KEYWORDS = {
+    'if': TokenKind.IF,
+    'then': TokenKind.THEN,
+    'else': TokenKind.ELSE,
 }
 
 class TokeniseError(Exception):

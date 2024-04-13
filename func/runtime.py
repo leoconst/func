@@ -37,6 +37,14 @@ class _VirtualMachine:
                 second = self._pop()
                 result = first + second
                 self._push(result)
+            case Opcode.JUMP:
+                jump = self._next()
+                self._program_pointer += jump
+            case Opcode.JUMP_IF:
+                condition = self._pop()
+                jump = self._next()
+                if condition != 0:
+                    self._program_pointer += jump
             case Opcode.PRINT:
                 address = self._pop()
                 length = self._heap[address]

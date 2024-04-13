@@ -82,6 +82,42 @@ from func.analysis import *
             Opcode.PRINT,
         ]
     ),
+    (
+        Module({
+            'main': IfElse(Integer(1), String(['Yes']), String(['No'])),
+        }),
+        [
+            Opcode.PUSH,
+            1,
+            Opcode.JUMP_IF,
+            6,
+            Opcode.SET,
+            2,
+            *b'No',
+            Opcode.JUMP,
+            5,
+            Opcode.SET,
+            3,
+            *b'Yes',
+        ]
+    ),
+    (
+        Module({
+            'main': IfElse(Integer(1), Integer(3), Integer(4)),
+        }),
+        [
+            Opcode.PUSH,
+            1,
+            Opcode.JUMP_IF,
+            4,
+            Opcode.PUSH,
+            4,
+            Opcode.JUMP,
+            2,
+            Opcode.PUSH,
+            3,
+        ]
+    ),
 ])
 def test_success(module, expected):
     actual = compile_(module)

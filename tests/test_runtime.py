@@ -29,6 +29,40 @@ from func.runtime import execute
         ],
         'Hello, world!\n'
     ),
+    (
+        [
+            Opcode.PUSH,
+            1,
+            Opcode.JUMP_IF,
+            4,
+            Opcode.PUSH,
+            8,
+            Opcode.JUMP,
+            2,
+            Opcode.PUSH,
+            5,
+            Opcode.INTEGER_TO_STRING,
+            Opcode.PRINT,
+        ],
+        '5\n'
+    ),
+    (
+        [
+            Opcode.PUSH,
+            0,
+            Opcode.JUMP_IF,
+            4,
+            Opcode.PUSH,
+            8,
+            Opcode.JUMP,
+            2,
+            Opcode.PUSH,
+            5,
+            Opcode.INTEGER_TO_STRING,
+            Opcode.PRINT,
+        ],
+        '8\n'
+    ),
 ])
 def test_success(capsys, program, expected_output):
     execute(program)

@@ -26,32 +26,6 @@ def _dereference_identifiers(expression, bindings):
 
 def _compile_expression(expression, bindings):
     match _dereference_identifiers(expression, bindings):
-        case Call():
-            return _compile_call(expression, bindings)
-        case _:
-            CompilationError(f'Unsupported expression type: {expression}')
-
-def _compile_identifier(identifier, bindings):
-    value = bindings[identifier.value]
-    return _compile_expression(value)
-
-def _compile_call(call, bindings):
-    argument = _dereference_identifiers(call.argument, bindings)
-    yield from _compile_argument(argument, bindings)
-    callable_ = _dereference_identifiers(call.callable_, bindings)
-    yield from _compile_callable(callable_, bindings)
-
-def _compile_callable(expression, bindings):
-    match expression:
-        case list() as raw:
-            return raw
-        case Call():
-            return _compile_call(expression, bindings)
-        case _:
-            raise CompilationError(f'Unsupported callable type: {expression}')
-
-def _compile_argument(expression, bindings):
-    match expression:
         case Integer(value):
             yield Opcode.PUSH
             yield value
@@ -64,8 +38,35 @@ def _compile_argument(expression, bindings):
             yield from raw
         case Call():
             yield from _compile_call(expression, bindings)
+        case IfElse():
+            yield from _compile_if_else(expression, bindings)
         case _:
-            raise CompilationError(f'Unsupported argument type: {expression}')
+            CompilationError(f'Unsupported expression type: {expression}')
+
+def _compile_if_else(expression, bindings):
+    true_block = list(_compile_expression(expression.true, bindings))
+    false_block = _compile_expression(expression.false, bindings)
+    false_block_with_jump = [*false_block, Opcode.JUMP, len(true_block)]
+    yield from _compile_expression(expression.condition, bindings)
+    yield Opcode.JUMP_IF
+    yield len(false_block_with_jump)
+    yield from false_block_with_jump
+    yield from true_block
+
+def _compile_call(call, bindings):
+    argument = _dereference_identifiers(call.argument, bindings)
+    yield from _compile_expression(argument, bindings)
+    callable_ = _dereference_identifiers(call.callable_, bindings)
+    yield from _compile_callable(callable_, bindings)
+
+def _compile_callable(expression, bindings):
+    match expression:
+        case list() as raw:
+            return raw
+        case Call():
+            return _compile_call(expression, bindings)
+        case _:
+            raise CompilationError(f'Unsupported callable type: {expression}')
 
 def _extract_string(parts):
     match parts:
@@ -80,19 +81,21 @@ def _extract_string(parts):
 class Opcode(Enum):
     PUSH = auto()
     SET = auto()
-    ADD = auto()
     PRINT = auto()
+    ADD = auto()
+    JUMP = auto()
+    JUMP_IF = auto()
     INTEGER_TO_STRING = auto()
 
 BUILTINS = {
     'print': [
         Opcode.PRINT,
     ],
-    'integer_to_string': [
-        Opcode.INTEGER_TO_STRING,
-    ],
     'add': [
         Opcode.ADD,
+    ],
+    'integer_to_string': [
+        Opcode.INTEGER_TO_STRING,
     ],
 }
 

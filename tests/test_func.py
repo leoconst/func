@@ -5,7 +5,8 @@ import func
 
 @pytest.mark.parametrize('file_name, expected_output', [
     ('the_answer.func', '42\n'),
-    ('hello_world.func', 'Hello, world!\n')
+    ('hello_world.func', 'Hello, world!\n'),
+    ('conditional.func', 'Okay\n'),
 ])
 def test_run_file(capsys, file_name, expected_output):
     path = f'examples/{file_name}'
@@ -41,6 +42,30 @@ text = 'You said:\\n\\t\\'Anyone there?\\''\
 main = print ''\
 ''',
         '\n'
+    ),
+    (
+'''\
+main = print (integer_to_string if 1 then 4 else 3)\
+''',
+        '4\n'
+    ),
+    (
+'''\
+main = print (integer_to_string if 0 then 4 else 3)\
+''',
+        '3\n'
+    ),
+    (
+'''\
+main = print if 1 then 'Yes' else 'No'\
+''',
+        'Yes\n'
+    ),
+    (
+'''\
+main = print if 0 then 'Yes' else 'No'\
+''',
+        'No\n'
     ),
 ])
 def test_run(capsys, source, expected_output):

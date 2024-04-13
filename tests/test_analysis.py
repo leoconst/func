@@ -39,6 +39,12 @@ def _get_syntax(source):
             'func': Lambda('a', Call(Identifier('a'), Integer(7)))
         })
     ),
+    (
+        'conditional = if 1 then 2 else 3',
+        Module({
+            'conditional': IfElse(Integer(1), Integer(2), Integer(3))
+        })
+    ),
 ])
 def test_success(source, expected):
     syntax = _get_syntax(source)
@@ -76,6 +82,9 @@ def test_duplicate_binding_name():
     ("main = 'The answer is \\(answer)!'", 'answer'),
     ('func = λrun -> it', 'it'),
     ('func = λa -> a b', 'b'),
+    ('name = if condition then 1 else 0', 'condition'),
+    ("name = if 1 then true else 'no'", 'true'),
+    ("name = if 0 then 'yes' else false", 'false'),
 ])
 def test_unbound_name(source, name):
     syntax = _get_syntax(source)
