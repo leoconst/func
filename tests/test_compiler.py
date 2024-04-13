@@ -82,6 +82,21 @@ from func.analysis import *
             Opcode.PRINT,
         ]
     ),
+    (
+        Module({
+            'main': IfElse(Integer(1), Integer(3), Integer(4)),
+        }),
+        [
+            Opcode.PUSH,
+            1,
+            Opcode.JUMP_IF,
+            2,
+            Opcode.PUSH,
+            4,
+            Opcode.PUSH,
+            3,
+        ]
+    ),
 ])
 def test_success(module, expected):
     actual = compile_(module)
