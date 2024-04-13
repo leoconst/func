@@ -80,19 +80,19 @@ def _extract_string(parts):
 class Opcode(Enum):
     PUSH = auto()
     SET = auto()
-    ADD = auto()
     PRINT = auto()
+    ADD = auto()
     INTEGER_TO_STRING = auto()
 
 BUILTINS = {
     'print': [
         Opcode.PRINT,
     ],
-    'integer_to_string': [
-        Opcode.INTEGER_TO_STRING,
-    ],
     'add': [
         Opcode.ADD,
+    ],
+    'integer_to_string': [
+        Opcode.INTEGER_TO_STRING,
     ],
 }
 
