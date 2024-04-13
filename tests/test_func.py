@@ -42,6 +42,30 @@ main = print ''\
 ''',
         '\n'
     ),
+    (
+'''\
+main = print (integer_to_string if 1 then 4 else 3)\
+''',
+        '4\n'
+    ),
+    (
+'''\
+main = print (integer_to_string if 0 then 4 else 3)\
+''',
+        '3\n'
+    ),
+    (
+'''\
+main = print if 1 then 'Yes' else 'No'\
+''',
+        'Yes\n'
+    ),
+    (
+'''\
+main = print if 0 then 'Yes' else 'No'\
+''',
+        'No\n'
+    ),
 ])
 def test_run(capsys, source, expected_output):
     func.run_source(source)
