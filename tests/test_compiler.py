@@ -90,9 +90,11 @@ from func.analysis import *
             Opcode.PUSH,
             1,
             Opcode.JUMP_IF,
-            2,
+            4,
             Opcode.PUSH,
             4,
+            Opcode.JUMP,
+            2,
             Opcode.PUSH,
             3,
         ]

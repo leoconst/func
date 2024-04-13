@@ -38,16 +38,20 @@ def _compile_expression(expression, bindings):
             yield from raw
         case Call():
             yield from _compile_call(expression, bindings)
-        case IfElse(condition, true, false):
-            yield from _compile_expression(condition, bindings)
-            yield Opcode.JUMP_IF
-            false_block = list(_compile_expression(false, bindings))
-            yield len(false_block)
-            yield from false_block
-            true_block = _compile_expression(true, bindings)
-            yield from true_block
+        case IfElse():
+            yield from _compile_if_else(expression, bindings)
         case _:
             CompilationError(f'Unsupported expression type: {expression}')
+
+def _compile_if_else(expression, bindings):
+    true_block = list(_compile_expression(expression.true, bindings))
+    false_block = _compile_expression(expression.false, bindings)
+    false_block_with_jump = [*false_block, Opcode.JUMP, len(true_block)]
+    yield from _compile_expression(expression.condition, bindings)
+    yield Opcode.JUMP_IF
+    yield len(false_block_with_jump)
+    yield from false_block_with_jump
+    yield from true_block
 
 def _compile_call(call, bindings):
     argument = _dereference_identifiers(call.argument, bindings)
@@ -79,6 +83,7 @@ class Opcode(Enum):
     SET = auto()
     PRINT = auto()
     ADD = auto()
+    JUMP = auto()
     JUMP_IF = auto()
     INTEGER_TO_STRING = auto()
 
