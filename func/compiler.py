@@ -26,28 +26,35 @@ def _dereference_identifiers(expression, bindings):
 
 def _compile_expression(expression, bindings):
     match _dereference_identifiers(expression, bindings):
-        case Integer(value):
-            yield Opcode.PUSH
-            yield value
-        case String():
-            value = _extract_string(expression.parts)
-            raw = value.encode('utf8')
-            length = len(raw)
-            yield Opcode.SET
-            yield length
-            yield from raw
-        case Call():
-            yield from _compile_call(expression, bindings)
-        case IfElse():
-            yield from _compile_if_else(expression, bindings)
+        case Integer() as integer:
+            return _compile_integer(integer, bindings)
+        case String() as string:
+            return _compile_string(string, bindings)
+        case IfElse() as if_else:
+            return _compile_if_else(if_else, bindings)
+        case Call() as call:
+            return _compile_call(call, bindings)
         case _:
-            CompilationError(f'Unsupported expression type: {expression}')
+            raise CompilationError(
+                f'Unsupported expression type: {expression}')
 
-def _compile_if_else(expression, bindings):
-    true_block = list(_compile_expression(expression.true, bindings))
-    false_block = _compile_expression(expression.false, bindings)
+def _compile_integer(integer, bindings):
+    yield Opcode.PUSH
+    yield integer.value
+
+def _compile_string(string, bindings):
+    value = _extract_string(string.parts)
+    raw = value.encode('utf8')
+    length = len(raw)
+    yield Opcode.SET
+    yield length
+    yield from raw
+
+def _compile_if_else(if_else, bindings):
+    true_block = list(_compile_expression(if_else.true, bindings))
+    false_block = _compile_expression(if_else.false, bindings)
     false_block_with_jump = [*false_block, Opcode.JUMP, len(true_block)]
-    yield from _compile_expression(expression.condition, bindings)
+    yield from _compile_expression(if_else.condition, bindings)
     yield Opcode.JUMP_IF
     yield len(false_block_with_jump)
     yield from false_block_with_jump
