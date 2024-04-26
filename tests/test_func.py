@@ -14,61 +14,69 @@ def test_run_file(capsys, file_name, expected_output):
     captured = capsys.readouterr()
     assert captured.out == expected_output
 
-@pytest.mark.parametrize('source, expected_output', [
+@pytest.mark.parametrize('raw_source, expected_output', [
     (
-'''\
-main = print (integer_to_string 0)\
+'''
+main = print (integer_to_string 0)
 ''',
         '0\n'
     ),
     (
-'''\
+'''
 main = print answer
 answer = integer_to_string (add1 x)
 x = add1 40
-add1 = add 1\
+add1 = add 1
 ''',
         '42\n',
     ),
     (
-'''\
+'''
 main = print text
-text = 'You said:\\n\\t\\'Anyone there?\\''\
+text = 'You said:\\n\\t\\'Anyone there?\\''
 ''',
         "You said:\n\t'Anyone there?'\n"
     ),
     (
-'''\
-main = print ''\
+'''
+main = print ''
 ''',
         '\n'
     ),
     (
-'''\
-main = print (integer_to_string if 1 then 4 else 3)\
+'''
+main = print (integer_to_string if 1 then 4 else 3)
 ''',
         '4\n'
     ),
     (
-'''\
-main = print (integer_to_string if 0 then 4 else 3)\
+'''
+main = print (integer_to_string if 0 then 4 else 3)
 ''',
         '3\n'
     ),
     (
-'''\
-main = print if 1 then 'Yes' else 'No'\
+'''
+main = print if 1 then 'Yes' else 'No'
 ''',
         'Yes\n'
     ),
     (
-'''\
-main = print if 0 then 'Yes' else 'No'\
+'''
+main = print if 0 then 'Yes' else 'No'
 ''',
         'No\n'
     ),
 ])
-def test_run(capsys, source, expected_output):
+def test_run(capsys, raw_source, expected_output):
+    source = _extract_source(raw_source)
     func.run_source(source)
     captured = capsys.readouterr()
     assert captured.out == expected_output
+
+def _extract_source(raw_source):
+    if raw_source[0] != '\n':
+        raise ValueError('Raw source should start with a newline')
+    if raw_source[-1] != '\n':
+        raise ValueError('Raw source should end with a newline')
+    return raw_source[1:-1]
