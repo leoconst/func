@@ -50,6 +50,14 @@ def parse(tokens):
     tokens = Tokens(tokens)
     return _parse_module(tokens)
 
+def parse_binding(tokens):
+    tokens = Tokens(tokens)
+    return _parse_binding(tokens)
+
+def parse_expression(tokens):
+    tokens = Tokens(tokens)
+    return _parse_expression(tokens)
+
 def _parse_module(tokens):
     bindings = list(_parse_module_bindings(tokens))
     return Module(bindings)
