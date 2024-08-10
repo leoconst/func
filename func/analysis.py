@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Iterable
 
 from . import syntax
 
@@ -43,14 +44,16 @@ class IfElse(Expression):
 class AnalysisError(Exception):
     pass
 
-def analyse(module, additional_names=()):
-    bindings = module.bindings
-    names = _analyse_names(bindings, additional_names)
+def analyse(
+        module: syntax.Module,
+        additional_names: Iterable[str] = ()) -> Module:
+    syntax_bindings = module.bindings
+    names = _analyse_names(syntax_bindings, additional_names)
     bindings = {binding.name: _analyse_expression(binding.value, names)
-        for binding in bindings}
+        for binding in syntax_bindings}
     return Module(bindings)
 
-def _analyse_names(bindings, additional_names):
+def _analyse_names(bindings: list[syntax.Binding], additional_names: Iterable[str] = ()):
     names = set(additional_names)
     for binding in bindings:
         name = binding.name

@@ -4,13 +4,15 @@ from .analysis import analyse
 from .syntax import parse
 from .tokens import tokenise
 
+from pathlib import Path
 
-def run_file(path):
+
+def run_file(path: Path) -> None:
     with open(path) as file:
         source = file.read()
         run_source(source)
 
-def run_source(source):
+def run_source(source: str) -> None:
     tokens = tokenise(source)
     syntax = parse(tokens)
     module = analyse(syntax, BUILTINS)
