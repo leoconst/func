@@ -48,9 +48,7 @@ class IfElse(Expression):
 
 def parse(tokens):
     tokens = Tokens(tokens)
-    result = _parse_module(tokens)
-    tokens.assert_empty()
-    return result
+    return _parse_module(tokens)
 
 def _parse_module(tokens):
     bindings = list(_parse_module_bindings(tokens))
@@ -150,11 +148,6 @@ class Tokens:
             description = _describe_token_kind(token_kind)
             raise _error(description, token)
         return token
-
-    def assert_empty(self):
-        next_token = self.get_next()
-        if next_token is not _END_OF_SOURCE:
-            raise RuntimeError(f'Expected no more tokens but got {next_token}')
 
     def branch(self, branches, expectation):
         token = self.get_next()
