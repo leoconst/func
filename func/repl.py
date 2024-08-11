@@ -25,11 +25,8 @@ def repl():
             except ParseError:
                 syntax_expression = parse_expression(iter(tokens))
                 analysed_expression = analyse_new_expression(syntax_expression)
-                print(analysed_expression)
                 module = Module({'main': analysed_expression, **bindings})
-                print(module)
                 program = compile_(module)
-                print(program)
                 execute(program)
             else:
                 analysed_value = analyse_new_expression(syntax_binding.value)
