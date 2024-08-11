@@ -1,12 +1,15 @@
 from .runtime import execute
 from .compiler import compile_, BUILTINS
-from .analysis import analyse
-from .syntax import parse_binding, parse_expression, ParseError, Binding, Module
+from .analysis import analyse, Module as Module, analyse_expression
+from .syntax import parse_binding, parse_expression, ParseError
 from .tokens import tokenise, TokeniseError
 
 
 def repl():
-    bindings = []
+    bindings = dict(BUILTINS)
+
+    def analyse_new_expression(expression):
+        return analyse_expression(expression, bindings)
 
     while True:
         try:
@@ -18,16 +21,19 @@ def repl():
             tokens = list(tokenise(line))
 
             try:
-                binding = parse_binding(iter(tokens))
+                syntax_binding = parse_binding(iter(tokens))
             except ParseError:
-                expression = parse_expression(iter(tokens))
-                main = Binding('main', expression)
-                module = Module([main, *bindings])
-                analysed = analyse(module, BUILTINS)
-                program = compile_(analysed)
+                syntax_expression = parse_expression(iter(tokens))
+                analysed_expression = analyse_new_expression(syntax_expression)
+                print(analysed_expression)
+                module = Module({'main': analysed_expression, **bindings})
+                print(module)
+                program = compile_(module)
+                print(program)
                 execute(program)
             else:
-                bindings.append(binding)
+                analysed_value = analyse_new_expression(syntax_binding.value)
+                bindings[syntax_binding.name] = analysed_value
 
         except Exception as exception:
             print(f'Error: {exception}')

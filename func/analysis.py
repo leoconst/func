@@ -46,7 +46,7 @@ class AnalysisError(Exception):
 def analyse(module, additional_names=()):
     bindings = module.bindings
     names = _analyse_names(bindings, additional_names)
-    bindings = {binding.name: _analyse_expression(binding.value, names)
+    bindings = {binding.name: analyse_expression(binding.value, names)
         for binding in bindings}
     return Module(bindings)
 
@@ -59,7 +59,7 @@ def _analyse_names(bindings, additional_names):
         names.add(name)
     return names
 
-def _analyse_expression(expression, names):
+def analyse_expression(expression, names):
     match expression:
         case syntax.Integer(string):
             return Integer(int(string))
@@ -83,18 +83,18 @@ def _analyse_identifier(name, names):
 
 def _analyse_call(callable_, argument, names):
     return Call(
-        _analyse_expression(callable_, names),
-        _analyse_expression(argument, names))
+        analyse_expression(callable_, names),
+        analyse_expression(argument, names))
 
 def _analyse_lambda(parameter, body, names):
     all_names = {parameter, *names}
-    return Lambda(parameter, _analyse_expression(body, all_names))
+    return Lambda(parameter, analyse_expression(body, all_names))
 
 def _analyse_if_else(condition, true, false, names):
     return IfElse(
-        _analyse_expression(condition, names),
-        _analyse_expression(true, names),
-        _analyse_expression(false, names))
+        analyse_expression(condition, names),
+        analyse_expression(true, names),
+        analyse_expression(false, names))
 
 def _analyse_string(parts, names):
     parts = list(map(lambda part: _analyse_string_part(part, names), parts))
@@ -105,6 +105,6 @@ def _analyse_string_part(part, names):
         case str() as string:
             return string
         case syntax.Expression() as expression:
-            return _analyse_expression(expression, names)
+            return analyse_expression(expression, names)
         case _:
             raise TypeError(f'Unknown string part: {part}')
