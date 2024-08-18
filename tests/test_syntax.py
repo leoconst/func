@@ -167,7 +167,7 @@ from func.tokens import tokenise
 ])
 def test_success(source, expected):
     tokens = tokenise(source)
-    actual = parse(tokens)
+    actual = parse_expanded(tokens)
     assert actual == expected
 
 @pytest.mark.parametrize('source, expectation, reality', [
@@ -205,4 +205,12 @@ def test_failure(source, expectation, reality):
     tokens = tokenise(source)
     expected_error_message = f'Expected {expectation}, got {reality}'
     with pytest.raises(ParseError, match=expected_error_message):
-        parse(tokens)
+        parse_expanded(tokens)
+
+def parse_expanded(source):
+    module = parse(source)
+    _expand_module(module)
+    return module
+
+def _expand_module(module):
+    module.bindings = list(module.bindings)

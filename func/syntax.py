@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import reduce
+from typing import Iterator
 
 from .tokens import *
 
 
 @dataclass
 class Module:
-    bindings: list[Binding]
+    bindings: Iterator[Binding]
 
 @dataclass
 class Binding:
@@ -59,7 +60,7 @@ def parse_expression(tokens):
     return _parse_expression(tokens)
 
 def _parse_module(tokens):
-    bindings = list(_parse_module_bindings(tokens))
+    bindings = _parse_module_bindings(tokens)
     return Module(bindings)
 
 def _parse_module_bindings(tokens):

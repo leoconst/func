@@ -44,7 +44,7 @@ class AnalysisError(Exception):
     pass
 
 def analyse(module, additional_names=()):
-    bindings = module.bindings
+    bindings = list(module.bindings)
     names = _analyse_names(bindings, additional_names)
     bindings = {binding.name: analyse_expression(binding.value, names)
         for binding in bindings}

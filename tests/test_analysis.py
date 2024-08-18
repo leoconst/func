@@ -11,6 +11,10 @@ def _get_syntax(source):
     tokens = tokenise(source)
     return parse(tokens)
 
+def _get_bindings(source):
+    syntax = _get_syntax(source)
+    return list(syntax.bindings)
+
 @pytest.mark.parametrize('source, expected', [
     (
         'name0 = 0\nname1 = 1',
@@ -51,13 +55,13 @@ def test_success(source, expected):
     actual = analyse(syntax)
     assert actual == expected
 
-bindings = _get_syntax('''\
+bindings = _get_bindings('''\
 main = print greeting
 greeting = 'Hello, \\(name)!'
 name = 'World'
 print = call 7777
 call = λcode -> 0\
-''').bindings
+''')
 @given(strategies.permutations(bindings))
 def test_binding_ordering_is_arbitrary(bindings):
     module = syntax.Module(bindings)
