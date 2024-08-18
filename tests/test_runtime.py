@@ -31,6 +31,28 @@ from func.runtime import execute
     ),
     (
         [
+
+
+Opcode.PUSH, 6,
+Opcode.CALL, factorial,
+Opcode.PRINT,
+
+factorial: # n
+Opcode.COPY, # n, n
+Opcode.INSERT, 1, 2, # n, 2, n
+Opcode.LESS_THAN_OR_EQUAL, # 0|1, n
+Opcode.JUMP_IF, factorial_1, # n
+
+Opcode.COPY, # n, n
+Opcode.DECREMENT, # (n - 1), n
+Opcode.CALL, # (n - 1)!, n
+Opcode.MULTIPLY, # (n - 1)!*n
+Opcode.RETURN,
+
+factorial_1:
+Opcode.RETURN, # n
+
+
             Opcode.PUSH, 6, # [6]
             Opcode.CALL, 7, # factorial [6!]
             Opcode.INTEGER_TO_STRING, # [0] b'720'

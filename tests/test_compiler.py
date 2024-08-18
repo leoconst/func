@@ -82,6 +82,13 @@ from func.analysis import *
             Opcode.PRINT,
         ]
     ),
+    # (
+    #     Module({
+    #         'main': Call(
+    #             Identifier('print'),
+    #             Call(Identifier('factorial')))
+    #     })
+    # ),
 ])
 def test_success(module, expected):
     actual = compile_(module)

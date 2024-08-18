@@ -1,0 +1,22 @@
+factorial = \n -> if less_than_or_equal n 2 then n else multiply (factorial (decrement n)) n
+main = print (factorial 6)
+
+
+Opcode.PUSH, 6,
+Opcode.CALL, factorial,
+Opcode.PRINT,
+
+factorial: # n
+Opcode.COPY, # n, n
+Opcode.INSERT, 1, 2, # n, 2, n
+Opcode.LESS_THAN_OR_EQUAL, # 0|1, n
+Opcode.JUMP_IF, factorial_1, # n
+
+Opcode.COPY, # n, n
+Opcode.DECREMENT, # (n - 1), n
+Opcode.CALL, # (n - 1)!, n
+Opcode.MULTIPLY, # (n - 1)!*n
+Opcode.RETURN,
+
+factorial_1:
+Opcode.RETURN, # n
