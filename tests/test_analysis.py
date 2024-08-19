@@ -3,7 +3,7 @@ from hypothesis import given, strategies
 
 from func.tokeniser import tokenise
 import func.syntax as syntax
-from func.syntax import parse
+from func.parser import parse
 from func.analysis import *
 
 
