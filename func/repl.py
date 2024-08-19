@@ -1,6 +1,7 @@
 from .runtime import execute
 from .compiler import compile_, BUILTINS
-from .analysis import analyse_expression, Expression, Module
+from .analysed import Expression, Module
+from .analyser import analyse_expression
 from .parser import parse_binding, parse_expression, ParseError
 from .tokeniser import tokenise, TokeniseError
 

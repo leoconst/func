@@ -4,7 +4,8 @@ from hypothesis import given, strategies
 from func.tokeniser import tokenise
 import func.syntax as syntax
 from func.parser import parse
-from func.analysis import *
+from func.analysed import *
+from func.analyser import analyse, AnalysisError
 
 
 def _get_syntax(source):

@@ -1,6 +1,6 @@
 from enum import Enum, auto
 
-from .analysis import *
+from .analysed import *
 
 
 def compile_(module):

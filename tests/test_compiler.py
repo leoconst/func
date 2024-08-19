@@ -1,7 +1,7 @@
 import pytest
 
 from func.compiler import *
-from func.analysis import *
+from func.analysed import *
 
 
 @pytest.mark.parametrize('module, expected', [
