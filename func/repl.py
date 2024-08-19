@@ -15,7 +15,7 @@ def repl():
                 case Expression() as expression:
                     _execute(expression, bindings)
                 case other:
-                    raise ValueError(other)
+                    raise TypeError(f'Unknown: {other}')
         except Exception as exception:
             print(f'Error: {exception}')
 
