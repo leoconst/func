@@ -22,7 +22,9 @@ def get_type(expression):
 def _get_call_type(call):
     callable_type = get_type(call.callable_)
     if not isinstance(callable_type, types.Callable):
-        raise TypeError_(f'Expected a callable, got expression of type {callable_type.name}')
+        raise TypeError_(
+            'Expected a callable,'
+            f' got expression of type {callable_type.name}')
     argument_type = get_type(call.argument)
     parameter_type = callable_type.parameter
     if argument_type != parameter_type:
