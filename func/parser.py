@@ -6,15 +6,15 @@ from .syntax import *
 
 
 def parse(tokens):
-    tokens = Tokens(tokens)
+    tokens = _Tokens(tokens)
     return _parse_module(tokens)
 
 def parse_binding(tokens):
-    tokens = Tokens(tokens)
+    tokens = _Tokens(tokens)
     return _parse_binding(tokens)
 
 def parse_expression(tokens):
-    tokens = Tokens(tokens)
+    tokens = _Tokens(tokens)
     return _parse_expression(tokens)
 
 def _parse_module(tokens):
@@ -103,7 +103,7 @@ def _accept_string_expression_escape(tokens):
 class ParseError(Exception):
     pass
 
-class Tokens:
+class _Tokens:
 
     def __init__(self, tokens):
         self._tokens = tokens
