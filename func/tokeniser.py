@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from enum import Enum, auto
+from enum import Enum
 
 from .tokens import Token, TokenKind
 
