@@ -1,6 +1,7 @@
 from .repl import repl
 from .runtime import execute
-from .compiler import compile_, BUILTINS
+from .compiler import compile_
+from .builtins import BUILTINS
 from .analyser import analyse
 from .parser import parse
 from .tokeniser import tokenise

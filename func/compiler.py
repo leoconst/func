@@ -1,4 +1,5 @@
 from .analysed import *
+from .builtins import BUILTINS
 from .opcodes import Opcode
 
 
@@ -67,8 +68,8 @@ def _compile_call(call, bindings):
 
 def _compile_callable(expression, bindings):
     match expression:
-        case list() as raw:
-            return raw
+        case Raw() as raw:
+            return raw.opcodes
         case Call():
             return _compile_call(expression, bindings)
         case _:
@@ -83,18 +84,6 @@ def _extract_string(parts):
         case _:
             raise CompilationError(
                 'String expression escapes are not supported')
-
-BUILTINS = {
-    'print': [
-        Opcode.PRINT,
-    ],
-    'add': [
-        Opcode.ADD,
-    ],
-    'integer_to_string': [
-        Opcode.INTEGER_TO_STRING,
-    ],
-}
 
 class CompilationError(Exception):
     pass

@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .types import Type
+from .opcodes import Opcode
+
 
 @dataclass
 class Module:
@@ -37,3 +40,8 @@ class IfElse(Expression):
     condition: Expression
     true: Expression
     false: Expression
+
+@dataclass
+class Raw(Expression):
+    type: Type
+    opcodes: list[Opcode]

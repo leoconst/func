@@ -19,3 +19,4 @@ class Callable(Type):
 
 INTEGER = Type('Integer')
 STRING = Type('String')
+UNIT = Type('Unit')
