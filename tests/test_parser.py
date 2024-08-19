@@ -1,7 +1,8 @@
 import pytest
 
+from func.parser import parse, ParseError
 from func.syntax import *
-from func.tokens import tokenise
+from func.tokeniser import tokenise
 
 
 @pytest.mark.parametrize('source, expected', [

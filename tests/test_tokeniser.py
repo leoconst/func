@@ -1,6 +1,7 @@
 import pytest
 
-from func.tokens import *
+from func.tokens import Token, TokenKind
+from func.tokeniser import *
 
 
 @pytest.mark.parametrize('source, expected', [

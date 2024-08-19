@@ -5,37 +5,32 @@ from dataclasses import dataclass
 
 @dataclass
 class Module:
-    bindings: list[Binding]
-
-@dataclass
-class Binding:
-    name: str
-    value: Expression
+    bindings: dict[str, Expression]
 
 class Expression:
     pass
 
 @dataclass
-class Call(Expression):
-    callable_: Expression
-    argument: Expression
-
-@dataclass
-class Identifier(Expression):
-    name: str
-
-@dataclass
 class Integer(Expression):
-    digits: str
+    value: int
 
 @dataclass
 class String(Expression):
     parts: list[str|Expression]
 
 @dataclass
+class Identifier(Expression):
+    name: str
+
+@dataclass
 class Lambda(Expression):
     parameter: str
     body: Expression
+
+@dataclass
+class Call(Expression):
+    callable_: Expression
+    argument: Expression
 
 @dataclass
 class IfElse(Expression):
