@@ -3,7 +3,7 @@ from .runtime import execute
 from .compiler import compile_, BUILTINS
 from .analysis import analyse
 from .syntax import parse
-from .tokens import tokenise
+from .tokeniser import tokenise
 
 
 def run_file(path):
