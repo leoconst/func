@@ -1,6 +1,5 @@
-from enum import Enum, auto
-
 from .analysed import *
+from .opcodes import Opcode
 
 
 def compile_(module):
@@ -84,15 +83,6 @@ def _extract_string(parts):
         case _:
             raise CompilationError(
                 'String expression escapes are not supported')
-
-class Opcode(Enum):
-    PUSH = auto()
-    SET = auto()
-    PRINT = auto()
-    ADD = auto()
-    JUMP = auto()
-    JUMP_IF = auto()
-    INTEGER_TO_STRING = auto()
 
 BUILTINS = {
     'print': [

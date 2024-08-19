@@ -1,6 +1,6 @@
 from array import array
 
-from .compiler import Opcode
+from .opcodes import Opcode
 
 
 def execute(program):
