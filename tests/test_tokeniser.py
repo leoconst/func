@@ -1,6 +1,11 @@
 import pytest
 
-from func.tokens import Token, TokenKind
+from func.tokens import (
+    ConstantToken,
+    ConstantTokenKind,
+    ValueToken,
+    ValueTokenKind,
+)
 from func.tokeniser import *
 
 
@@ -10,76 +15,79 @@ from func.tokeniser import *
         []
     ),
     (
-        "\t repeat 3 '\\'Two plus three\\' equals:\\n\\t\\(add\t2 '3').'  \r\n\n= \t",
+        ("\t repeat 3 '\\'Two plus three\\' equals:\\n\\t\\(add\t2 '3').'"
+         "  \r\n\n= \t"),
         [
-            Token(TokenKind.IDENTIFIER, 'repeat'),
-            Token(TokenKind.INTEGER, '3'),
-            Token(TokenKind.STRING_DELIMITER),
-            Token(TokenKind.STRING_CONTENT, '\'Two plus three\' equals:\n\t'),
-            Token(TokenKind.STRING_EXPRESSION_ESCAPE_START),
-            Token(TokenKind.IDENTIFIER, 'add'),
-            Token(TokenKind.INTEGER, '2'),
-            Token(TokenKind.STRING_DELIMITER),
-            Token(TokenKind.STRING_CONTENT, '3'),
-            Token(TokenKind.STRING_DELIMITER),
-            Token(TokenKind.STRING_EXPRESSION_ESCAPE_END),
-            Token(TokenKind.STRING_CONTENT, '.'),
-            Token(TokenKind.STRING_DELIMITER),
-            Token(TokenKind.NEWLINE),
-            Token(TokenKind.NEWLINE),
-            Token(TokenKind.EQUALS),
+            ValueToken(ValueTokenKind.IDENTIFIER, 'repeat'),
+            ValueToken(ValueTokenKind.INTEGER, '3'),
+            ConstantToken(ConstantTokenKind.STRING_DELIMITER),
+            ValueToken(
+                ValueTokenKind.STRING_CONTENT,
+                '\'Two plus three\' equals:\n\t'),
+            ConstantToken(ConstantTokenKind.STRING_EXPRESSION_ESCAPE_START),
+            ValueToken(ValueTokenKind.IDENTIFIER, 'add'),
+            ValueToken(ValueTokenKind.INTEGER, '2'),
+            ConstantToken(ConstantTokenKind.STRING_DELIMITER),
+            ValueToken(ValueTokenKind.STRING_CONTENT, '3'),
+            ConstantToken(ConstantTokenKind.STRING_DELIMITER),
+            ConstantToken(ConstantTokenKind.STRING_EXPRESSION_ESCAPE_END),
+            ValueToken(ValueTokenKind.STRING_CONTENT, '.'),
+            ConstantToken(ConstantTokenKind.STRING_DELIMITER),
+            ConstantToken(ConstantTokenKind.NEWLINE),
+            ConstantToken(ConstantTokenKind.NEWLINE),
+            ConstantToken(ConstantTokenKind.EQUALS),
         ]
     ),
     (
         '\\a -> b\nλc -> d',
         [
-            Token(TokenKind.LAMBDA),
-            Token(TokenKind.IDENTIFIER, 'a'),
-            Token(TokenKind.ARROW),
-            Token(TokenKind.IDENTIFIER, 'b'),
-            Token(TokenKind.NEWLINE),
-            Token(TokenKind.LAMBDA),
-            Token(TokenKind.IDENTIFIER, 'c'),
-            Token(TokenKind.ARROW),
-            Token(TokenKind.IDENTIFIER, 'd'),
+            ConstantToken(ConstantTokenKind.LAMBDA),
+            ValueToken(ValueTokenKind.IDENTIFIER, 'a'),
+            ConstantToken(ConstantTokenKind.ARROW),
+            ValueToken(ValueTokenKind.IDENTIFIER, 'b'),
+            ConstantToken(ConstantTokenKind.NEWLINE),
+            ConstantToken(ConstantTokenKind.LAMBDA),
+            ValueToken(ValueTokenKind.IDENTIFIER, 'c'),
+            ConstantToken(ConstantTokenKind.ARROW),
+            ValueToken(ValueTokenKind.IDENTIFIER, 'd'),
         ]
     ),
     (
         "''",
         [
-            Token(TokenKind.STRING_DELIMITER),
-            Token(TokenKind.STRING_DELIMITER),
+            ConstantToken(ConstantTokenKind.STRING_DELIMITER),
+            ConstantToken(ConstantTokenKind.STRING_DELIMITER),
         ]
     ),
     (
         "'\\()'",
         [
-            Token(TokenKind.STRING_DELIMITER),
-            Token(TokenKind.STRING_EXPRESSION_ESCAPE_START),
-            Token(TokenKind.STRING_EXPRESSION_ESCAPE_END),
-            Token(TokenKind.STRING_DELIMITER),
+            ConstantToken(ConstantTokenKind.STRING_DELIMITER),
+            ConstantToken(ConstantTokenKind.STRING_EXPRESSION_ESCAPE_START),
+            ConstantToken(ConstantTokenKind.STRING_EXPRESSION_ESCAPE_END),
+            ConstantToken(ConstantTokenKind.STRING_DELIMITER),
         ]
     ),
     (
         "'hello\\()world'",
         [
-            Token(TokenKind.STRING_DELIMITER),
-            Token(TokenKind.STRING_CONTENT, 'hello'),
-            Token(TokenKind.STRING_EXPRESSION_ESCAPE_START),
-            Token(TokenKind.STRING_EXPRESSION_ESCAPE_END),
-            Token(TokenKind.STRING_CONTENT, 'world'),
-            Token(TokenKind.STRING_DELIMITER),
+            ConstantToken(ConstantTokenKind.STRING_DELIMITER),
+            ValueToken(ValueTokenKind.STRING_CONTENT, 'hello'),
+            ConstantToken(ConstantTokenKind.STRING_EXPRESSION_ESCAPE_START),
+            ConstantToken(ConstantTokenKind.STRING_EXPRESSION_ESCAPE_END),
+            ValueToken(ValueTokenKind.STRING_CONTENT, 'world'),
+            ConstantToken(ConstantTokenKind.STRING_DELIMITER),
         ]
     ),
     (
         'if iffley then athens else welse',
         [
-            Token(TokenKind.IF),
-            Token(TokenKind.IDENTIFIER, 'iffley'),
-            Token(TokenKind.THEN),
-            Token(TokenKind.IDENTIFIER, 'athens'),
-            Token(TokenKind.ELSE),
-            Token(TokenKind.IDENTIFIER, 'welse'),
+            ConstantToken(ConstantTokenKind.IF),
+            ValueToken(ValueTokenKind.IDENTIFIER, 'iffley'),
+            ConstantToken(ConstantTokenKind.THEN),
+            ValueToken(ValueTokenKind.IDENTIFIER, 'athens'),
+            ConstantToken(ConstantTokenKind.ELSE),
+            ValueToken(ValueTokenKind.IDENTIFIER, 'welse'),
         ]
     ),
 ])

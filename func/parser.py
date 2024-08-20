@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from functools import reduce
 
-from .tokens import TokenKind
+from .tokens import ConstantTokenKind, ValueTokenKind
 from .syntax import *
 
 
@@ -25,25 +25,31 @@ def _parse_module_bindings(tokens):
     first = True
     while tokens.peek() is not _END_OF_SOURCE:
         if not first:
-            tokens.expect(TokenKind.NEWLINE)
+            tokens.expect(ConstantTokenKind.NEWLINE)
         first = False
         yield _parse_binding(tokens)
 
 def _parse_binding(tokens):
-    identifier = tokens.expect(TokenKind.IDENTIFIER)
+    identifier = tokens.expect(ValueTokenKind.IDENTIFIER)
     name = identifier.value
-    tokens.expect(TokenKind.EQUALS)
+    tokens.expect(ConstantTokenKind.EQUALS)
     value = _parse_expression(tokens)
     return Binding(name, value)
 
 def _parse_expression(tokens):
     branches = {
-        TokenKind.INTEGER: _accept_integer,
-        TokenKind.IDENTIFIER: _accept_identifier,
-        TokenKind.STRING_DELIMITER: lambda _: _accept_string(tokens),
-        TokenKind.LAMBDA: lambda _: _accept_lambda(tokens),
-        TokenKind.IF: lambda _: _accept_if_else(tokens),
-        TokenKind.OPEN_BRACKET: lambda _: _accept_bracketed_expression(tokens),
+        ValueTokenKind.INTEGER:
+            _accept_integer,
+        ValueTokenKind.IDENTIFIER:
+            _accept_identifier,
+        ConstantTokenKind.STRING_DELIMITER:
+            lambda _: _accept_string(tokens),
+        ConstantTokenKind.LAMBDA:
+            lambda _: _accept_lambda(tokens),
+        ConstantTokenKind.IF:
+            lambda _: _accept_if_else(tokens),
+        ConstantTokenKind.OPEN_BRACKET:
+            lambda _: _accept_bracketed_expression(tokens),
     }
     first = tokens.branch(branches, 'an expression')
     arguments = _parse_expression_arguments(tokens, branches)
@@ -54,22 +60,22 @@ def _parse_expression_arguments(tokens, branches):
         yield argument
 
 def _accept_lambda(tokens):
-    parameter = tokens.expect(TokenKind.IDENTIFIER).value
-    tokens.expect(TokenKind.ARROW)
+    parameter = tokens.expect(ValueTokenKind.IDENTIFIER).value
+    tokens.expect(ConstantTokenKind.ARROW)
     body = _parse_expression(tokens)
     return Lambda(parameter, body)
 
 def _accept_if_else(tokens):
     condition = _parse_expression(tokens)
-    tokens.expect(TokenKind.THEN)
+    tokens.expect(ConstantTokenKind.THEN)
     true = _parse_expression(tokens)
-    tokens.expect(TokenKind.ELSE)
+    tokens.expect(ConstantTokenKind.ELSE)
     false = _parse_expression(tokens)
     return IfElse(condition, true, false)
 
 def _accept_bracketed_expression(tokens):
     expression = _parse_expression(tokens)
-    tokens.expect(TokenKind.CLOSE_BRACKET)
+    tokens.expect(ConstantTokenKind.CLOSE_BRACKET)
     return expression
 
 def _accept_integer(integer):
@@ -86,18 +92,18 @@ def _parse_string_parts(tokens):
     while True:
         token = tokens.get_next()
         match token.kind:
-            case TokenKind.STRING_DELIMITER:
+            case ConstantTokenKind.STRING_DELIMITER:
                 return
-            case TokenKind.STRING_CONTENT:
+            case ValueTokenKind.STRING_CONTENT:
                 yield token.value
-            case TokenKind.STRING_EXPRESSION_ESCAPE_START:
+            case ConstantTokenKind.STRING_EXPRESSION_ESCAPE_START:
                 yield _accept_string_expression_escape(tokens)
             case _:
                 raise TypeError(f'Unexpected token in string: {token}')
 
 def _accept_string_expression_escape(tokens):
     expression = _parse_expression(tokens)
-    tokens.expect(TokenKind.STRING_EXPRESSION_ESCAPE_END)
+    tokens.expect(ConstantTokenKind.STRING_EXPRESSION_ESCAPE_END)
     return expression
 
 class ParseError(Exception):
@@ -160,15 +166,26 @@ class _EndOfSource:
 _END_OF_SOURCE = _EndOfSource()
 
 _TOKEN_KIND_DESCRIPTIONS = {
-    TokenKind.STRING_DELIMITER: 'a string',
-    TokenKind.STRING_EXPRESSION_ESCAPE_END: 'the end of an expression escape',
-    TokenKind.IDENTIFIER: 'an identifier',
-    TokenKind.INTEGER: 'an integer',
-    TokenKind.EQUALS: 'an equals symbol',
-    TokenKind.LAMBDA: 'the beginning of a lambda',
-    TokenKind.ARROW: 'an arrow',
-    TokenKind.NEWLINE: 'a newline',
-    TokenKind.OPEN_BRACKET: 'an opening bracket',
-    TokenKind.CLOSE_BRACKET: 'a closing bracket',
-    _EndOfSource.kind: 'end-of-source',
+    ValueTokenKind.IDENTIFIER:
+        'an identifier',
+    ValueTokenKind.INTEGER:
+        'an integer',
+    ConstantTokenKind.STRING_DELIMITER:
+        'a string',
+    ConstantTokenKind.STRING_EXPRESSION_ESCAPE_END:
+        'the end of an expression escape',
+    ConstantTokenKind.EQUALS:
+        'an equals symbol',
+    ConstantTokenKind.LAMBDA:
+        'the beginning of a lambda',
+    ConstantTokenKind.ARROW:
+        'an arrow',
+    ConstantTokenKind.NEWLINE:
+        'a newline',
+    ConstantTokenKind.OPEN_BRACKET:
+        'an opening bracket',
+    ConstantTokenKind.CLOSE_BRACKET:
+        'a closing bracket',
+    _EndOfSource.kind:
+        'end-of-source',
 }

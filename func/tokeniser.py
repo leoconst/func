@@ -3,7 +3,12 @@ from __future__ import annotations
 import re
 from enum import Enum
 
-from .tokens import Token, TokenKind
+from .tokens import (
+    ConstantToken,
+    ConstantTokenKind,
+    ValueToken,
+    ValueTokenKind,
+)
 
 
 def tokenise(source):
@@ -20,29 +25,26 @@ def _tokenise_with(source):
             case _RawTokenKind.IGNORED:
                 continue
             case _RawTokenKind.IDENTIFIER if kind := _KEYWORDS.get(value):
-                yield Token(kind)
+                yield ConstantToken(kind)
             case _:
-                kind = TokenKind[raw_kind.name]
-                yield _make_token(kind, value)
-                if kind == TokenKind.STRING_DELIMITER:
+                kind_name = raw_kind.name
+                yield _make_token(kind_name, value)
+                if raw_kind == _RawTokenKind.STRING_DELIMITER:
                     yield from _tokenise_string(source)
                     tokens = source.get_next_raw_tokens()
 
-def _make_token(kind, value):
-    if kind in _VALUE_KINDS:
-        return Token(kind, value)
-    return Token(kind)
-
-_VALUE_KINDS = {
-    TokenKind.STRING_CONTENT,
-    TokenKind.IDENTIFIER,
-    TokenKind.INTEGER,
-}
+def _make_token(kind_name, value):
+    try:
+        kind = ConstantTokenKind[kind_name]
+        return ConstantToken(kind)
+    except KeyError:
+        kind = ValueTokenKind[kind_name]
+        return ValueToken(kind, value)
 
 _KEYWORDS = {
-    'if': TokenKind.IF,
-    'then': TokenKind.THEN,
-    'else': TokenKind.ELSE,
+    'if': ConstantTokenKind.IF,
+    'then': ConstantTokenKind.THEN,
+    'else': ConstantTokenKind.ELSE,
 }
 
 class TokeniseError(Exception):
@@ -78,7 +80,7 @@ def _tokenise_string(source):
         else:
             content_builder.add_character(head)
     yield from content_builder.token()
-    yield Token(TokenKind.STRING_DELIMITER)
+    yield ConstantToken(ConstantTokenKind.STRING_DELIMITER)
 
 def _handle_escape(source, content_builder):
     character = source.get_next_character('immediately after string escape')
@@ -89,17 +91,17 @@ def _handle_escape(source, content_builder):
 
 def _handle_expression_escape(source, content_builder):
     yield from content_builder.token()
-    yield Token(TokenKind.STRING_EXPRESSION_ESCAPE_START)
+    yield ConstantToken(ConstantTokenKind.STRING_EXPRESSION_ESCAPE_START)
     yield from _tokenise_until_brackets_balanced(source)
-    yield Token(TokenKind.STRING_EXPRESSION_ESCAPE_END)
+    yield ConstantToken(ConstantTokenKind.STRING_EXPRESSION_ESCAPE_END)
 
 def _tokenise_until_brackets_balanced(source):
     bracket_depth = 0
     for token in _tokenise_with(source):
         match token.kind:
-            case TokenKind.OPEN_BRACKET:
+            case ConstantTokenKind.OPEN_BRACKET:
                 bracket_depth += 1
-            case TokenKind.CLOSE_BRACKET:
+            case ConstantTokenKind.CLOSE_BRACKET:
                 if bracket_depth <= 1:
                     break
                 bracket_depth -= 1
@@ -136,7 +138,7 @@ class _StringContentBuilder:
         if characters:
             content = ''.join(characters)
             characters.clear()
-            yield Token(TokenKind.STRING_CONTENT, content)
+            yield ValueToken(ValueTokenKind.STRING_CONTENT, content)
 
 class _Source:
 

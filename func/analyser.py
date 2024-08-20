@@ -36,7 +36,7 @@ def analyse_expression(expression, names):
         case syntax.IfElse(condition, true, false):
             return _analyse_if_else(condition, true, false, names)
         case _:
-            raise TypeError(f"Unknown expression: {expression}")
+            raise TypeError(f'Unknown expression: {expression}')
 
 def _analyse_identifier(name, names):
     if name not in names:
