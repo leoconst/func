@@ -8,19 +8,19 @@ from func.analysed import *
     (
         Module({
             'main': Call(
-                Identifier('print'),
-                Identifier('string')
+                Reference('print'),
+                Reference('string')
             ),
             'string': Call(
-                Identifier('integer_to_string'),
-                Identifier('value')
+                Reference('integer_to_string'),
+                Reference('value')
             ),
             'value': Call(
                 Call(
-                    Identifier('add'),
-                    Identifier('x')
+                    Reference('add'),
+                    Reference('x')
                 ),
-                Identifier('y')
+                Reference('y')
             ),
             'x': Integer(3),
             'y': Integer(4),
@@ -38,15 +38,15 @@ from func.analysed import *
     (
         Module({
             'main': Call(
-                Identifier('print'),
-                Identifier('answer')
+                Reference('print'),
+                Reference('answer')
             ),
             'answer': Call(
-                Identifier('integer_to_string'), 
-                Call(Identifier('add1'), Identifier('x'))
+                Reference('integer_to_string'), 
+                Call(Reference('add1'), Reference('x'))
             ),
-            'x': Call(Identifier('add1'), Integer(40)),
-            'add1': Call(Identifier('add'), Integer(1)),
+            'x': Call(Reference('add1'), Integer(40)),
+            'add1': Call(Reference('add'), Integer(1)),
         }),
         [
             Opcode.PUSH,
@@ -63,7 +63,7 @@ from func.analysed import *
     ),
     (
         Module({
-            'main': Call(Identifier('print'), String(['FUNC'])),
+            'main': Call(Reference('print'), String(['FUNC'])),
         }),
         [
             Opcode.SET,
@@ -74,7 +74,7 @@ from func.analysed import *
     ),
     (
         Module({
-            'main': Call(Identifier('print'), String([])),
+            'main': Call(Reference('print'), String([])),
         }),
         [
             Opcode.SET,
@@ -126,18 +126,18 @@ def test_success(module, expected):
 @pytest.mark.parametrize('module', [
     Module({
         'main': Call(
-            Identifier('print'),
-            Call(Identifier('integer_to_string'), Integer(3))
+            Reference('print'),
+            Call(Reference('integer_to_string'), Integer(3))
         ),
     }),
     Module({
-        'x': Call(Identifier('integer_to_string'), Integer(3)),
-        'main': Call(Identifier('print'), Identifier('x')),
+        'x': Call(Reference('integer_to_string'), Integer(3)),
+        'main': Call(Reference('print'), Reference('x')),
     }),
     Module({
-        'x': Call(Identifier('integer_to_string'), Integer(3)),
-        'show': Identifier('print'),
-        'main': Call(Identifier('show'), Identifier('x')),
+        'x': Call(Reference('integer_to_string'), Integer(3)),
+        'show': Reference('print'),
+        'main': Call(Reference('show'), Reference('x')),
     }),
 ])
 def test_identifier_dereferencing(module):

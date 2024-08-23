@@ -14,8 +14,8 @@ def _get_main(bindings):
     except KeyError:
         raise CompilationError('No main binding defined')
 
-def _dereference_identifiers(expression, bindings):
-    while isinstance(expression, Identifier):
+def _dereference_references(expression, bindings):
+    while isinstance(expression, Reference):
         name = expression.name
         try:
             expression = bindings[name]
@@ -24,7 +24,7 @@ def _dereference_identifiers(expression, bindings):
     return expression
 
 def _compile_expression(expression, bindings):
-    match _dereference_identifiers(expression, bindings):
+    match _dereference_references(expression, bindings):
         case Integer() as integer:
             return _compile_integer(integer, bindings)
         case String() as string:
@@ -60,9 +60,9 @@ def _compile_if_else(if_else, bindings):
     yield from true_block
 
 def _compile_call(call, bindings):
-    argument = _dereference_identifiers(call.argument, bindings)
+    argument = _dereference_references(call.argument, bindings)
     yield from _compile_expression(argument, bindings)
-    callable_ = _dereference_identifiers(call.callable_, bindings)
+    callable_ = _dereference_references(call.callable_, bindings)
     yield from _compile_callable(callable_, bindings)
 
 def _compile_callable(expression, bindings):
