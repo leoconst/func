@@ -2,15 +2,16 @@ import pytest
 import testing
 
 from func import types
-from func.typer import get_type, TypeError_, Typed
+from func.typer import get_type, TypeError_
 from func.analysed import *
 
 
-_INTEGER_STRING_INTEGER = types.Callable(
+_INTEGER_STRING_INTEGER_TYPE = types.Callable(
     types.INTEGER,
     types.Callable(
         types.STRING,
         types.INTEGER))
+_INTEGER_STRING_INTEGER_LAMBDA = Raw(_INTEGER_STRING_INTEGER_TYPE, [])
 
 @pytest.mark.parametrize('expression, expected_type', [
     (
@@ -22,7 +23,7 @@ _INTEGER_STRING_INTEGER = types.Callable(
         types.STRING
     ),
     (
-        Call(Call(Typed(_INTEGER_STRING_INTEGER), Integer(2)), String([])),
+        Call(Call(_INTEGER_STRING_INTEGER_LAMBDA, Integer(2)), String([])),
         types.INTEGER
     ),
 ])
@@ -32,7 +33,7 @@ def test_success(expression, expected_type):
 
 @pytest.mark.parametrize('expression, expected_message', [
     (
-        Call(Call(Typed(_INTEGER_STRING_INTEGER), Integer(2)), Integer(2)),
+        Call(Call(_INTEGER_STRING_INTEGER_LAMBDA, Integer(2)), Integer(2)),
         'Expected expression of type String, got Integer',
     ),
     (

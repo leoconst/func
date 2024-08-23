@@ -14,8 +14,8 @@ def get_type(expression):
             return types.STRING
         case Call() as call:
             return _get_call_type(call)
-        case Typed() as typed:
-            return typed.type_
+        case Raw() as raw:
+            return raw.type
         case _:
             raise TypeError(f'Cannot get type of expression: {expression}')
 
@@ -35,7 +35,3 @@ def _get_call_type(call):
 
 class TypeError_(Exception):
     pass
-
-@dataclass
-class Typed:
-    type_: types.Type
