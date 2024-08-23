@@ -24,13 +24,13 @@ def _get_call_type(call):
     if not isinstance(callable_type, types.Callable):
         raise TypeError_(
             'Expected a callable,'
-            f' got expression of type {callable_type.name}')
+            f' got expression of type {callable_type}')
     argument_type = get_type(call.argument)
     parameter_type = callable_type.parameter
     if argument_type != parameter_type:
         raise TypeError_(
-            f'Expected expression of type {parameter_type.name},'
-            f' got {argument_type.name}')
+            f'Expected expression of type {parameter_type},'
+            f' got {argument_type}')
     return callable_type.return_
 
 class TypeError_(Exception):

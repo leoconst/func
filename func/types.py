@@ -3,20 +3,24 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
-@dataclass
 class Type:
+    pass
+
+@dataclass
+class Named(Type):
     name: str
+
+    def __str__(self):
+        return self.name
 
 @dataclass
 class Callable(Type):
     parameter: Type
     return_: Type
 
-    def __init__(self, parameter, return_):
-        super().__init__(f'{parameter.name} -> {return_.name}')
-        self.parameter = parameter
-        self.return_ = return_
+    def __str__(self):
+        return f'{self.parameter} -> {self.return_}'
 
-INTEGER = Type('Integer')
-STRING = Type('String')
-UNIT = Type('Unit')
+INTEGER = Named('Integer')
+STRING = Named('String')
+UNIT = Named('Unit')
