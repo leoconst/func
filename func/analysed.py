@@ -14,6 +14,10 @@ class Expression:
     pass
 
 @dataclass
+class Reference(Expression):
+    name: str
+
+@dataclass
 class Integer(Expression):
     value: int
 
@@ -22,13 +26,13 @@ class String(Expression):
     parts: list[str|Expression]
 
 @dataclass
-class Identifier(Expression):
-    name: str
-
-@dataclass
 class Lambda(Expression):
     parameter: str
     body: Expression
+
+@dataclass
+class Parameter(Expression):
+    name: str
 
 @dataclass
 class Call(Expression):

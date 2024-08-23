@@ -23,7 +23,7 @@ def _get_syntax(source):
     (
         "main = 5 name\nname = 'World'",
         Module({
-            'main': Call(Integer(5), Identifier('name')),
+            'main': Call(Integer(5), Reference('name')),
             'name': String(['World']),
         })
     ),
@@ -31,19 +31,26 @@ def _get_syntax(source):
         "x = 4\ndescription = 'Number is \\(x).'",
         Module({
             'x': Integer(4),
-            'description': String(['Number is ', Identifier('x'), '.'])
+            'description': String(['Number is ', Reference('x'), '.'])
         })
     ),
     (
         'func = λa -> a 7',
         Module({
-            'func': Lambda('a', Call(Identifier('a'), Integer(7)))
+            'func': Lambda('a', Call(Parameter('a'), Integer(7)))
         })
     ),
     (
         'conditional = if 1 then 2 else 3',
         Module({
             'conditional': IfElse(Integer(1), Integer(2), Integer(3))
+        })
+    ),
+    (
+        'function = λoverloaded -> overloaded\noverloaded = 3',
+        Module({
+            'function': Lambda('overloaded', Parameter('overloaded')),
+            'overloaded': Integer(3),
         })
     ),
 ])
@@ -63,10 +70,10 @@ call = λcode -> 0\
 def test_binding_ordering_is_arbitrary(bindings):
     module = syntax.Module(bindings)
     expected = Module({
-        'main': Call(Identifier('print'), Identifier('greeting')),
-        'greeting': String(['Hello, ', Identifier('name'), '!']),
+        'main': Call(Reference('print'), Reference('greeting')),
+        'greeting': String(['Hello, ', Reference('name'), '!']),
         'name': String(['World']),
-        'print': Call(Identifier('call'), Integer(7777)),
+        'print': Call(Reference('call'), Integer(7777)),
         'call': Lambda('code', Integer(0)),
     })
     actual = analyse(module)
