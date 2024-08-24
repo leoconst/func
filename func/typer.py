@@ -1,17 +1,24 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+import itertools
+from dataclasses import dataclass, field
 
 from . import types
 from .analysed import *
 
 
 def get_type(expression):
+    result = _get_type(expression)
+    if result.expectations:
+        raise TypeError_(result.expectations)
+    return result.type
+
+def _get_type(expression):
     match expression:
         case Integer():
-            return types.INTEGER
+            return Result(types.INTEGER)
         case String():
-            return types.STRING
+            return Result(types.STRING)
         case Lambda() as lambda_:
             return _get_lambda_type(lambda_)
         case Call() as call:
@@ -19,41 +26,92 @@ def get_type(expression):
         case IfElse() as if_else:
             return _get_if_else_type(if_else)
         case Raw() as raw:
-            return raw.type
+            return Result(raw.type)
         case _:
             raise TypeError(f'Cannot get type of expression: {expression}')
 
+@dataclass
+class Result:
+    type: Type
+    expectations: dict[str, Expectation] = field(default_factory=dict)
+
+@dataclass
+class Expectation:
+    type: Type
+
 def _get_lambda_type(lambda_):
-    parameter_type = types.Named(lambda_.parameter)
-    return_type = get_type(lambda_.body)
-    return types.Callable(parameter_type, return_type)
+    expectations = _Expectations()
+    return_type = expectations.unwrap(_get_type(lambda_.body))
+    name = lambda_.parameter
+    parameter_expectation = expectations.get(name)
+    if parameter_expectation is None:
+        parameter_type = types.Named(name)
+    else:
+        parameter_type = parameter_expectation.type
+    return expectations.wrap(types.Callable(parameter_type, return_type))
 
 def _get_call_type(call):
-    callable_type = get_type(call.callable_)
+    expectations = _Expectations()
+    callable_type = expectations.unwrap(_get_type(call.callable_))
     if not isinstance(callable_type, types.Callable):
         raise TypeError_(
             'Expected a callable,'
             f' got expression of type {callable_type}')
-    argument_type = get_type(call.argument)
+    argument_type = expectations.unwrap(_get_type(call.argument))
     parameter_type = callable_type.parameter
     if argument_type != parameter_type:
         raise TypeError_(
             f'Expected expression of type {parameter_type},'
             f' got {argument_type}')
-    return callable_type.return_
+    return expectations.wrap(callable_type.return_)
 
 def _get_if_else_type(if_else):
-    condition_type = get_type(if_else.condition)
-    if condition_type != types.INTEGER:
-        raise TypeError_(
-            f'Expected if-else condition to be of type {types.INTEGER},'
-            f' got {condition_type}')
-    true_type = get_type(if_else.true)
-    false_type = get_type(if_else.false)
+    expectations = _Expectations()
+    expectations.expect(if_else.condition, types.INTEGER)
+    true_type = expectations.unwrap(_get_type(if_else.true))
+    false_type = expectations.unwrap(_get_type(if_else.false))
     if true_type != false_type:
         raise TypeError_('Expected if-else branch types to match,'
             f' got true: {true_type}, false: {false_type}')
-    return true_type
+    return expectations.wrap(true_type)
+
+class _Expectations:
+
+    def __init__(self):
+        self._expectations = {}
+
+    def expect(self, expression, expected):
+        match expression:
+            case Parameter() as parameter:
+                self.add(parameter.name, Expectation(expected))
+            case _:
+                result = _get_type(expression)
+                actual = self.unwrap(result)
+                if actual != expected:
+                    raise TypeError_(f'Expected {expected}, got {actual}')
+
+    def add(self, name, expectation):
+        self._expectations[name] = expectation
+
+    def get(self, name):
+        return self._expectations.pop(name, None)
+
+    def unwrap(self, result):
+        match result:
+            case Result() as result:
+                self._expectations.update(result.expectations)
+                return result.type
+            case Hole():
+                raise TypeError_('Unexpected hole')
+
+    def wrap(self, type):
+        return Result(type, self._expectations)
+
+def _collect_expectations(*results):
+    expectations = []
+    for result in results:
+        expectations.extend(result.expectations)
+    return expectations
 
 class TypeError_(Exception):
     pass

@@ -30,6 +30,10 @@ _INTEGER_STRING_INTEGER_LAMBDA = Raw(_INTEGER_STRING_INTEGER_TYPE, [])
         Lambda('a', Integer(0)),
         types.Callable(types.Named('a'), types.INTEGER)
     ),
+    (
+        Lambda('a', IfElse(Parameter('a'), String([]), String([]))),
+        types.Callable(types.INTEGER, types.STRING)
+    ),
 ])
 def test_success(expression, expected_type):
     actual_type = get_type(expression)
@@ -46,7 +50,7 @@ def test_success(expression, expected_type):
     ),
     (
         IfElse(String([]), Integer(0), Integer(0)),
-        'Expected if-else condition to be of type Integer, got String'
+        'Expected Integer, got String'
     ),
     (
         IfElse(Integer(0), Integer(0), String([])),
