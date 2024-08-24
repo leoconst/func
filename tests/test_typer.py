@@ -42,6 +42,10 @@ _INTEGER_STRING_INTEGER_LAMBDA = Raw(_INTEGER_STRING_INTEGER_TYPE, [])
         Lambda('a', IfElse(Integer(0), Parameter('a'), String([]))),
         types.Callable(types.STRING, types.STRING)
     ),
+    (
+        Lambda('a', IfElse(Parameter('a'), Parameter('a'), Parameter('a'))),
+        types.Callable(types.INTEGER, types.INTEGER)
+    ),
 ])
 def test_success(expression, expected_type):
     actual_type = get_type(expression)
@@ -62,7 +66,11 @@ def test_success(expression, expected_type):
     ),
     (
         IfElse(Integer(0), Integer(0), String([])),
-        ('Expected if-else branch types to match Integer, got String')
+        'Expected if-else branch types to match Integer, got String'
+    ),
+    (
+        Parameter('greetings'),
+        'Undefined parameter: greetings'
     ),
 ])
 def test_failure(expression, expected_message):
@@ -70,7 +78,6 @@ def test_failure(expression, expected_message):
         get_type(expression)
 
 @pytest.mark.parametrize('expression', [
-    Parameter('a'),
     Reference('b'),
 ])
 def test_unsupported(expression):

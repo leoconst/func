@@ -22,6 +22,8 @@ def _get_type(expression, expectations):
             return types.STRING
         case Lambda() as lambda_:
             return _get_lambda_type(lambda_, expectations)
+        case Parameter() as parameter:
+            return _get_parameter_type(parameter, expectations)
         case Call() as call:
             return _get_call_type(call, expectations)
         case IfElse() as if_else:
@@ -45,6 +47,12 @@ def _get_lambda_type(lambda_, expectations):
     else:
         parameter_type = parameter_expectation.type
     return types.Callable(parameter_type, return_type)
+
+def _get_parameter_type(parameter, expectations):
+    expectation = expectations.get(parameter.name)
+    if expectation is None:
+        raise TypeError_(f'Undefined parameter: {parameter.name}')
+    return expectation.type
 
 def _get_call_type(call, expectations):
     callable_type = _get_type(call.callable_, expectations)
