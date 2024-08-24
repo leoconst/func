@@ -53,6 +53,14 @@ def _get_syntax(source):
             'overloaded': Integer(3),
         })
     ),
+    (
+        'function = λa -> add a a\nadd = λx -> λy -> 0',
+        Module({
+            'function': Lambda('a',
+                Call(Call(Reference('add'), Parameter('a')), Parameter('a'))),
+            'add': Lambda('x', Lambda('y', Integer(0)))
+        })
+    ),
 ])
 def test_success(source, expected):
     syntax = _get_syntax(source)
