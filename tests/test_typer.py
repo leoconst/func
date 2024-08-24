@@ -44,13 +44,21 @@ def test_success(expression, expected_type):
         Call(Integer(0), Integer(0)),
         'Expected a callable, got expression of type Integer',
     ),
+    (
+        IfElse(String([]), Integer(0), Integer(0)),
+        'Expected if-else condition to be of type Integer, got String'
+    ),
+    (
+        IfElse(Integer(0), Integer(0), String([])),
+        ('Expected if-else branch types to match,'
+         ' got true: Integer, false: String')
+    ),
 ])
 def test_failure(expression, expected_message):
     with testing.raises(TypeError_, message=expected_message):
         get_type(expression)
 
 @pytest.mark.parametrize('expression', [
-    IfElse(Integer(0), String(['Yes']), String(['No'])),
 ])
 def test_unsupported(expression):
     expected_message = f'Cannot get type of expression: {expression}'

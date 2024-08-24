@@ -16,6 +16,8 @@ def get_type(expression):
             return _get_lambda_type(lambda_)
         case Call() as call:
             return _get_call_type(call)
+        case IfElse() as if_else:
+            return _get_if_else_type(if_else)
         case Raw() as raw:
             return raw.type
         case _:
@@ -39,6 +41,19 @@ def _get_call_type(call):
             f'Expected expression of type {parameter_type},'
             f' got {argument_type}')
     return callable_type.return_
+
+def _get_if_else_type(if_else):
+    condition_type = get_type(if_else.condition)
+    if condition_type != types.INTEGER:
+        raise TypeError_(
+            f'Expected if-else condition to be of type {types.INTEGER},'
+            f' got {condition_type}')
+    true_type = get_type(if_else.true)
+    false_type = get_type(if_else.false)
+    if true_type != false_type:
+        raise TypeError_('Expected if-else branch types to match,'
+            f' got true: {true_type}, false: {false_type}')
+    return true_type
 
 class TypeError_(Exception):
     pass
