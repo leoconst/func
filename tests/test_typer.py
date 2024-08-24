@@ -54,11 +54,12 @@ def test_success(expression, expected_type):
     ),
     (
         IfElse(String([]), Integer(0), Integer(0)),
-        'Expected Integer, got String'
+        'Expected if-else condition to be of type Integer, got String'
     ),
     (
         IfElse(Integer(0), Integer(0), String([])),
-        'Expected Integer, got String'
+        ('Expected if-else false branch type to match'
+         ' true branch type Integer, got String')
     ),
 ])
 def test_failure(expression, expected_message):

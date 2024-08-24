@@ -38,6 +38,7 @@ class Result:
 @dataclass
 class Expectation:
     type: Type
+    description: str
 
 def _get_lambda_type(lambda_):
     expectations = _Expectations()
@@ -67,9 +68,12 @@ def _get_call_type(call):
 
 def _get_if_else_type(if_else):
     expectations = _Expectations()
-    expectations.expect(if_else.condition, types.INTEGER)
+    expectations.expect(if_else.condition,
+        Expectation(types.INTEGER, 'if-else condition to be of type'))
     true_type = expectations.unwrap(_get_type(if_else.true))
-    expectations.expect(if_else.false, true_type)
+    expectations.expect(if_else.false,
+        Expectation(true_type,
+            'if-else false branch type to match true branch type'))
     return expectations.wrap(true_type)
 
 class _Expectations:
@@ -77,15 +81,18 @@ class _Expectations:
     def __init__(self):
         self._expectations = {}
 
-    def expect(self, expression, expected):
+    def expect(self, expression, expectation):
         match expression:
             case Parameter() as parameter:
-                self.add(parameter.name, Expectation(expected))
+                self.add(parameter.name, expectation)
             case _:
                 result = _get_type(expression)
                 actual = self.unwrap(result)
+                expected = expectation.type
                 if actual != expected:
-                    raise TypeError_(f'Expected {expected}, got {actual}')
+                    raise TypeError_(
+                        f'Expected {expectation.description} {expected},'
+                        f' got {actual}')
 
     def add(self, name, expectation):
         self._expectations[name] = expectation
