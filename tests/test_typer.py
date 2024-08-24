@@ -34,6 +34,10 @@ _INTEGER_STRING_INTEGER_LAMBDA = Raw(_INTEGER_STRING_INTEGER_TYPE, [])
         Lambda('a', IfElse(Parameter('a'), String([]), String([]))),
         types.Callable(types.INTEGER, types.STRING)
     ),
+    (
+        Lambda('a', IfElse(Integer(0), String([]), Parameter('a'))),
+        types.Callable(types.STRING, types.STRING)
+    ),
 ])
 def test_success(expression, expected_type):
     actual_type = get_type(expression)
@@ -54,8 +58,7 @@ def test_success(expression, expected_type):
     ),
     (
         IfElse(Integer(0), Integer(0), String([])),
-        ('Expected if-else branch types to match,'
-         ' got true: Integer, false: String')
+        'Expected Integer, got String'
     ),
 ])
 def test_failure(expression, expected_message):

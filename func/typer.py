@@ -69,10 +69,7 @@ def _get_if_else_type(if_else):
     expectations = _Expectations()
     expectations.expect(if_else.condition, types.INTEGER)
     true_type = expectations.unwrap(_get_type(if_else.true))
-    false_type = expectations.unwrap(_get_type(if_else.false))
-    if true_type != false_type:
-        raise TypeError_('Expected if-else branch types to match,'
-            f' got true: {true_type}, false: {false_type}')
+    expectations.expect(if_else.false, true_type)
     return expectations.wrap(true_type)
 
 class _Expectations:
