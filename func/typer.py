@@ -107,11 +107,5 @@ class _Expectations:
     def wrap(self, type):
         return Result(type, self._expectations)
 
-def _collect_expectations(*results):
-    expectations = []
-    for result in results:
-        expectations.extend(result.expectations)
-    return expectations
-
 class TypeError_(Exception):
     pass
