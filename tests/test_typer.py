@@ -26,6 +26,10 @@ _INTEGER_STRING_INTEGER_LAMBDA = Raw(_INTEGER_STRING_INTEGER_TYPE, [])
         Call(Call(_INTEGER_STRING_INTEGER_LAMBDA, Integer(2)), String([])),
         types.INTEGER
     ),
+    (
+        Lambda('a', Integer(0)),
+        types.Callable(types.Named('a'), types.INTEGER)
+    ),
 ])
 def test_success(expression, expected_type):
     actual_type = get_type(expression)
@@ -46,7 +50,6 @@ def test_failure(expression, expected_message):
         get_type(expression)
 
 @pytest.mark.parametrize('expression', [
-    Lambda('parameter', Integer(0)),
     IfElse(Integer(0), String(['Yes']), String(['No'])),
 ])
 def test_unsupported(expression):

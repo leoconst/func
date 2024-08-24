@@ -12,12 +12,19 @@ def get_type(expression):
             return types.INTEGER
         case String():
             return types.STRING
+        case Lambda() as lambda_:
+            return _get_lambda_type(lambda_)
         case Call() as call:
             return _get_call_type(call)
         case Raw() as raw:
             return raw.type
         case _:
             raise TypeError(f'Cannot get type of expression: {expression}')
+
+def _get_lambda_type(lambda_):
+    parameter_type = types.Named(lambda_.parameter)
+    return_type = get_type(lambda_.body)
+    return types.Callable(parameter_type, return_type)
 
 def _get_call_type(call):
     callable_type = get_type(call.callable_)
