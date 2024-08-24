@@ -59,6 +59,8 @@ def test_failure(expression, expected_message):
         get_type(expression)
 
 @pytest.mark.parametrize('expression', [
+    Parameter('a'),
+    Reference('b'),
 ])
 def test_unsupported(expression):
     expected_message = f'Cannot get type of expression: {expression}'
