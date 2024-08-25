@@ -60,6 +60,10 @@ _ADD = BUILTINS['add']
         Lambda('a', Call(Call(_ADD, Integer(0)), Parameter('a'))),
         types.Callable(types.INTEGER, types.INTEGER)
     ),
+    (
+        Lambda('a', Call(Call(_ADD, Parameter('a')), Parameter('a'))),
+        types.Callable(types.INTEGER, types.INTEGER)
+    ),
 ])
 def test_success(expression, expected_type):
     actual_type = get_type(expression)
