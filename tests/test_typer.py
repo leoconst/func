@@ -76,7 +76,7 @@ def test_success(expression, expected_type):
     ),
     (
         Call(Integer(0), Integer(0)),
-        'Expected a callable, got expression of type Integer',
+        'Expected expression of a callable type, got Integer',
     ),
     (
         IfElse(String([]), Integer(0), Integer(0)),
