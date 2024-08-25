@@ -50,12 +50,8 @@ def _get_call_type(call, expectations):
         raise TypeError_(
             'Expected a callable,'
             f' got expression of type {callable_type}')
-    argument_type = _get_type(call.argument, expectations)
-    parameter_type = callable_type.parameter
-    if argument_type != parameter_type:
-        raise TypeError_(
-            f'Expected expression of type {parameter_type},'
-            f' got {argument_type}')
+    expectations.expect(call.argument,
+        'call argument to be of type', callable_type.parameter)
     return callable_type.return_
 
 def _get_if_else_type(if_else, expectations):

@@ -4,6 +4,7 @@ import testing
 from func import types
 from func.typer import get_type, TypeError_
 from func.analysed import *
+from func.builtins import BUILTINS
 
 
 _INTEGER_STRING_INTEGER_TYPE = types.Callable(
@@ -12,6 +13,7 @@ _INTEGER_STRING_INTEGER_TYPE = types.Callable(
         types.STRING,
         types.INTEGER))
 _INTEGER_STRING_INTEGER_LAMBDA = Raw(_INTEGER_STRING_INTEGER_TYPE, [])
+_ADD = BUILTINS['add']
 
 @pytest.mark.parametrize('expression, expected_type', [
     (
@@ -24,6 +26,10 @@ _INTEGER_STRING_INTEGER_LAMBDA = Raw(_INTEGER_STRING_INTEGER_TYPE, [])
     ),
     (
         Call(Call(_INTEGER_STRING_INTEGER_LAMBDA, Integer(2)), String([])),
+        types.INTEGER
+    ),
+    (
+        Call(Call(_ADD, Integer(2)), Integer(2)),
         types.INTEGER
     ),
     (
@@ -46,6 +52,14 @@ _INTEGER_STRING_INTEGER_LAMBDA = Raw(_INTEGER_STRING_INTEGER_TYPE, [])
         Lambda('a', IfElse(Parameter('a'), Parameter('a'), Parameter('a'))),
         types.Callable(types.INTEGER, types.INTEGER)
     ),
+    (
+        Lambda('a', Call(Call(_ADD, Parameter('a')), Integer(0))),
+        types.Callable(types.INTEGER, types.INTEGER)
+    ),
+    (
+        Lambda('a', Call(Call(_ADD, Integer(0)), Parameter('a'))),
+        types.Callable(types.INTEGER, types.INTEGER)
+    ),
 ])
 def test_success(expression, expected_type):
     actual_type = get_type(expression)
@@ -54,7 +68,7 @@ def test_success(expression, expected_type):
 @pytest.mark.parametrize('expression, expected_message', [
     (
         Call(Call(_INTEGER_STRING_INTEGER_LAMBDA, Integer(2)), Integer(2)),
-        'Expected expression of type String, got Integer',
+        'Expected call argument to be of type String, got Integer',
     ),
     (
         Call(Integer(0), Integer(0)),
