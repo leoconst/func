@@ -17,9 +17,9 @@ def parse_command_line_arguments():
 
 def run(options):
     if options.file is None:
-        repl()
+        return repl()
     else:
-        run_file_safe(options)
+        return run_file_safe(options)
 
 def run_file_safe(options):
     try:
