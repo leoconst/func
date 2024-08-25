@@ -70,7 +70,7 @@ class _Expectations:
 
     def expect(self, expression, description, expected):
         match expression:
-            case Parameter(name) if name not in self._parameters:
+            case Parameter(name=name) if name not in self._parameters:
                 self._parameters[name] = expected
             case _:
                 actual = _get_type(expression, self)
