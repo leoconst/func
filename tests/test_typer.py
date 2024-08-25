@@ -84,15 +84,15 @@ def test_success(expression, expected_type):
     ),
     (
         IfElse(Integer(0), Integer(0), String([])),
-        'Expected if-else branch types to match Integer, got String'
+        'Expected both if-else branches to be of type Integer, got String'
     ),
     (
         Lambda('a', IfElse(Parameter('a'), Parameter('a'), String([]))),
-        'Expected if-else branch types to match String, got Integer'
+        'Expected both if-else branches to be of type String, got Integer'
     ),
     (
         Lambda('a', IfElse(Parameter('a'), String([]), Parameter('a'))),
-        'Expected if-else branch types to match String, got Integer'
+        'Expected both if-else branches to be of type String, got Integer'
     ),
     (
         Parameter('greetings'),

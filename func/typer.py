@@ -44,19 +44,17 @@ def _get_parameter_type(parameter, expectations):
 def _get_call_type(call, expectations):
     callable_type = expectations.expect_callable(call.callable_)
     expectations.expect(call.argument,
-        'call argument to be of type', callable_type.parameter)
+        'call argument', callable_type.parameter)
     return callable_type.return_
 
 def _get_if_else_type(if_else, expectations):
-    expectations.expect(if_else.condition,
-        'if-else condition to be of type', types.INTEGER)
+    expectations.expect(if_else.condition, 'if-else condition', types.INTEGER)
     if isinstance(if_else.true, Parameter):
         checked_branch, other_branch = if_else.false, if_else.true
     else:
         checked_branch, other_branch = if_else.true, if_else.false
     expected_type = _get_type(checked_branch, expectations)
-    expectations.expect(other_branch,
-        'if-else branch types to match', expected_type)
+    expectations.expect(other_branch, 'both if-else branches', expected_type)
     return expected_type
 
 class _Expectations:
@@ -71,8 +69,8 @@ class _Expectations:
             case _:
                 actual = _get_type(expression, self)
                 if actual != expected:
-                    raise TypeError_(
-                        f'Expected {description} {expected}, got {actual}')
+                    raise TypeError_(f'Expected {description} to be of type'
+                                     f' {expected}, got {actual}')
 
     def expect_callable(self, expression):
         actual = _get_type(expression, self)
