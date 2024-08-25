@@ -61,13 +61,10 @@ def _get_call_type(call, expectations):
 def _get_if_else_type(if_else, expectations):
     expectations.expect(if_else.condition,
         'if-else condition to be of type', types.INTEGER)
-    match if_else.true:
-        case Parameter() as parameter:
-            checked_branch = if_else.false
-            other_branch = if_else.true
-        case _:
-            checked_branch = if_else.true
-            other_branch = if_else.false
+    if isinstance(if_else.true, Parameter):
+        checked_branch, other_branch = if_else.false, if_else.true
+    else:
+        checked_branch, other_branch = if_else.true, if_else.false
     expected_type = _get_type(checked_branch, expectations)
     expectations.expect(other_branch,
         'if-else branch types to match', expected_type)
