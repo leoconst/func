@@ -6,7 +6,10 @@ from .analysed import *
 
 def get_type(expression):
     expectations = _Expectations()
-    return _get_type(expression, expectations)
+    type = _get_type(expression, expectations)
+    if expectations.contains_unused():
+        raise ValueError('Unused parameter expectations')
+    return type
 
 def _get_type(expression, expectations):
     match expression:
@@ -87,6 +90,9 @@ class _Expectations:
 
     def get(self, name):
         return self._parameters.pop(name, None)
+
+    def contains_unused(self):
+        return bool(self._parameters)
 
 class TypeError_(Exception):
     pass
