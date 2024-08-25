@@ -69,6 +69,14 @@ def test_success(expression, expected_type):
         'Expected if-else branch types to match Integer, got String'
     ),
     (
+        Lambda('a', IfElse(Parameter('a'), Parameter('a'), String([]))),
+        'Expected if-else branch types to match String, got Integer'
+    ),
+    (
+        Lambda('a', IfElse(Parameter('a'), String([]), Parameter('a'))),
+        'Expected if-else branch types to match String, got Integer'
+    ),
+    (
         Parameter('greetings'),
         'Undefined parameter: greetings'
     ),

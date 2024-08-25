@@ -91,8 +91,8 @@ class _Expectations:
 
     def expect(self, expression, expectation):
         match expression:
-            case Parameter() as parameter:
-                self._named[parameter.name] = expectation
+            case Parameter(name) if name not in self._named:
+                self._named[name] = expectation
             case _:
                 actual = _get_type(expression, self)
                 expected = expectation.type
