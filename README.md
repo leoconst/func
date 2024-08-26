@@ -19,13 +19,13 @@ add1 = add 1
 ```
 prints the line `42` to the standard output.
 
-## How To
+## How do I?
 
-### To install:
-1. Install [Python][2]
+### Install:
+1. Install [Python][2] if you haven't already
 2. Clone the [repository][3]
 
-### To run:
+### Run:
 1. Open a terminal
 2. Navigate to the repository folder
 3. Either:
@@ -36,5 +36,5 @@ prints the line `42` to the standard output.
 		2. Run `python .`
 
 [1]: https://en.wikipedia.org/wiki/Read–eval–print_loop
-[2]: https://www.python.org/downloads
+[2]: https://www.python.org
 [3]: https://github.com/leoconst/func
