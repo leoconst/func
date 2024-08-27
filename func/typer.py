@@ -42,10 +42,7 @@ def _get_parameter_type(parameter, expectations):
     return type
 
 def _get_call_type(call, expectations):
-    callable_type = expectations.expect_callable(call.callable_)
-    expectations.expect(call.argument,
-        'call argument', callable_type.parameter)
-    return callable_type.return_
+    return expectations.expect_callable(call.callable_, call.argument)
 
 def _get_if_else_type(if_else, expectations):
     expectations.expect(if_else.condition, 'if-else condition', types.INTEGER)
@@ -72,12 +69,21 @@ class _Expectations:
                     raise TypeError_(f'Expected {description} to be of type'
                                      f' {expected}, got {actual}')
 
-    def expect_callable(self, expression):
-        actual = _get_type(expression, self)
-        if not isinstance(actual, types.Callable):
-            raise TypeError_(
-                f'Expected expression of a callable type, got {actual}')
-        return actual
+    def expect_callable(self, callable_, argument):
+        match callable_:
+            case Parameter(name=name) if name not in self._parameters:
+                argument_type = _get_type(argument, self)
+                return_type = types.Named(name)
+                callable_type = types.Callable(argument_type, return_type)
+                self._parameters[name] = callable_type
+                return return_type
+            case _:
+                actual = _get_type(callable_, self)
+                if not isinstance(actual, types.Callable):
+                    raise TypeError_('Expected expression of a callable type,'
+                                    f' got {actual}')
+                self.expect(argument, 'call argument', actual.parameter)
+                return actual.return_
 
     def get(self, name):
         return self._parameters.get(name, None)
