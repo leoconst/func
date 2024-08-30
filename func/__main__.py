@@ -16,14 +16,13 @@ def parse_command_line_arguments():
     return parser.parse_args()
 
 def run(options):
-    if options.file is None:
-        repl()
-    else:
-        return run_file_safe(options)
+    if (file := options.file) is not None:
+        return run_file_safe(file)
+    repl()
 
-def run_file_safe(options):
+def run_file_safe(file):
     try:
-        run_file(options.file)
+        run_file(file)
     except Exception as exception:
         return f'Error: {exception}'
 
