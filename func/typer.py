@@ -4,17 +4,21 @@ from . import types
 from .analysed import *
 
 
-def get_type(expression):
-    typer = _Typer()
+def get_type(bindings, name):
+    typer = _Typer(bindings)
+    expression = bindings[name]
     return typer.get_type(expression)
 
 class _Typer:
 
-    def __init__(self):
+    def __init__(self, bindings):
+        self._bindings = bindings
         self._seen_parameters = {}
 
     def get_type(self, expression):
         match expression:
+            case Reference() as reference:
+                return self._get_reference_type(reference)
             case Integer():
                 return types.INTEGER
             case String():
@@ -31,6 +35,10 @@ class _Typer:
                 return raw.type
             case _:
                 raise TypeError(f'Cannot get type of expression: {expression}')
+
+    def _get_reference_type(self, reference):
+        expression = self._bindings[reference.name]
+        return self.get_type(expression)
 
     def _get_lambda_type(self, lambda_):
         return_type = self.get_type(lambda_.body)

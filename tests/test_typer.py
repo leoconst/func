@@ -87,8 +87,35 @@ _ADD = BUILTINS['add']
         _INTEGER_STRING_INTEGER_TYPE
     ),
 ])
-def test_success(expression, expected_type):
-    actual_type = get_type(expression)
+def test_single_expression_success(expression, expected_type):
+    actual_type = _single_expression_get_type(expression)
+    assert actual_type == expected_type
+
+@pytest.mark.parametrize('bindings, expected_type', [
+    (
+        {
+            'main': Reference('x'),
+            'x': Integer(0),
+        },
+        types.INTEGER
+    ),
+    (
+        {
+            'main': Reference('add'),
+            'add': _ADD,
+        },
+        _ADD.type
+    ),
+    (
+        {
+            'main': Call(Call(Reference('add'), Integer(2)), Integer(2)),
+            'add': _ADD,
+        },
+        types.INTEGER
+    ),
+])
+def test_multiple_expressions_success(bindings, expected_type):
+    actual_type = get_type(bindings, 'main')
     assert actual_type == expected_type
 
 @pytest.mark.parametrize('expression, expected_message', [
@@ -121,14 +148,11 @@ def test_success(expression, expected_type):
         'Undefined parameter: greetings'
     ),
 ])
-def test_failure(expression, expected_message):
+def test_single_expression_failure(expression, expected_message):
     with testing.raises(TypeError_, message=expected_message):
-        get_type(expression)
+        _single_expression_get_type(expression)
 
-@pytest.mark.parametrize('expression', [
-    Reference('b'),
-])
-def test_unsupported(expression):
-    expected_message = f'Cannot get type of expression: {expression}'
-    with testing.raises(TypeError, message=expected_message):
-        get_type(expression)
+def _single_expression_get_type(expression):
+    name = 'name'
+    bindings = {name: expression}
+    return get_type(bindings, name)
