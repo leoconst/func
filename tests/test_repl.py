@@ -5,32 +5,34 @@ from func.repl import repl
 from io import StringIO
 
 
-def test_keyboard_interrupt_aborts(mock_inputs):
-    mock_inputs()
-    repl()
-
-def test_print_expression_prints(capsys, mock_inputs):
-    mock_inputs("print 'Hello!'")
-    repl()
-    captured = capsys.readouterr()
-    assert captured.out == 'Hello!\n'
-
-def test_other_expression_prints_nothing(capsys, mock_inputs):
-    mock_inputs("'Hello there'")
+@pytest.mark.parametrize('inputs, expected_output', [
+    ([], ''),
+    (["print 'Hello!'"], 'Hello!\n'),
+    (["'Hello there'"], ''),
+    (['num = 37', 'print (integer_to_string num)'], '37\n'),
+])
+def test_success(capsys, mock_inputs, inputs, expected_output):
+    mock_inputs(inputs)
     repl()
     captured = capsys.readouterr()
-    assert captured.out == ''
+    assert captured.out == expected_output
+    assert captured.err == ''
 
-def test_binding_added_to_namespace(capsys, mock_inputs):
-    mock_inputs('num = 37', 'print (integer_to_string num)')
+@pytest.mark.parametrize('inputs, expected_error', [
+    (['hello'], "Unbound name: 'hello'\n"),
+    (['!'], "Unexpected character: '!'\n"),
+])
+def test_failure(capsys, mock_inputs, inputs, expected_error):
+    mock_inputs(inputs)
     repl()
     captured = capsys.readouterr()
-    assert captured.out == '37\n'
+    assert captured.out == f'Error: {expected_error}'
+    assert captured.err == ''
 
 
 @pytest.fixture
 def mock_inputs(mocker):
-    def _patch_input(*inputs):
+    def _patch_input(inputs):
         inputs_iter = iter(inputs)
         def fake_input(_prompt):
             try:
