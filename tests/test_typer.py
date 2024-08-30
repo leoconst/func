@@ -25,11 +25,23 @@ _ADD = BUILTINS['add']
         types.STRING
     ),
     (
+        Call(_INTEGER_STRING_INTEGER_LAMBDA, Integer(0)),
+        types.Callable(types.STRING, types.INTEGER)
+    ),
+    (
         Call(Call(_INTEGER_STRING_INTEGER_LAMBDA, Integer(2)), String([])),
         types.INTEGER
     ),
     (
         Call(Call(_ADD, Integer(2)), Integer(2)),
+        types.INTEGER
+    ),
+    (
+        IfElse(Integer(0), String([]), String([])),
+        types.STRING
+    ),
+    (
+        IfElse(Integer(0), Integer(1), Integer(2)),
         types.INTEGER
     ),
     (
@@ -69,6 +81,10 @@ _ADD = BUILTINS['add']
         types.Callable(
             types.Callable(types.INTEGER, types.Named('a')),
             types.Named('a'))
+    ),
+    (
+        Raw(_INTEGER_STRING_INTEGER_TYPE, []),
+        _INTEGER_STRING_INTEGER_TYPE
     ),
 ])
 def test_success(expression, expected_type):
