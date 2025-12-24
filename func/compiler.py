@@ -33,6 +33,8 @@ def _compile_expression(expression, bindings):
             return _compile_if_else(if_else, bindings)
         case Call() as call:
             return _compile_call(call, bindings)
+        case Parameter():
+            return []
         case _:
             raise CompilationError(
                 f'Unsupported expression type: {expression}')
@@ -66,13 +68,18 @@ def _compile_call(call, bindings):
     yield from _compile_callable(callable_, bindings)
 
 def _compile_callable(expression, bindings):
-    match expression:
+    match _dereference_references(expression, bindings):
         case list() as raw:
             return raw
         case Call():
             return _compile_call(expression, bindings)
+        case Lambda() as lambda_:
+            return _compile_lambda(lambda_, bindings)
         case _:
             raise CompilationError(f'Unsupported callable type: {expression}')
+
+def _compile_lambda(lambda_, bindings):
+    yield from _compile_expression(lambda_.body, bindings)
 
 def _extract_string(parts):
     match parts:

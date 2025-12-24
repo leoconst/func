@@ -67,6 +67,13 @@ main = print if 0 then 'Yes' else 'No'
 ''',
         'No\n'
     ),
+    (
+'''
+main = print (integer_to_string (add10 7))
+add10 = \\x -> add x 10
+''',
+        '17\n'
+    ),
 ])
 def test_run(capsys, raw_source, expected_output):
     source = _extract_source(raw_source)

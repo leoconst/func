@@ -118,6 +118,32 @@ from func.analysed import *
             3,
         ]
     ),
+    (
+        Module({
+            'main': Call(
+                Reference('print'),
+                Call(
+                    Reference('integer_to_string'),
+                    Call(
+                        Reference('add10'),
+                        Integer(3)
+                    ))
+            ),
+            'add10': Lambda(
+                'x',
+                Call(Call(Reference('add'), Parameter('x')), Integer(10))
+            ),
+        }),
+        [
+            Opcode.PUSH,
+            3,
+            Opcode.PUSH,
+            10,
+            Opcode.ADD,
+            Opcode.INTEGER_TO_STRING,
+            Opcode.PRINT,
+        ]
+    ),
 ])
 def test_success(module, expected):
     actual = compile_(module)
