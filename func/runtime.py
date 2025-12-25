@@ -62,6 +62,8 @@ class _VirtualMachine:
                 self._heap.append(length)
                 self._heap.extend(raw)
                 self._push(address)
+            case Opcode.DUPLICATE:
+                self._push(self._stack[-1])
             case _:
                 raise ValueError(f'Unknown opcode: {opcode}')
 

@@ -3,6 +3,7 @@ from enum import Enum, auto
 
 class Opcode(Enum):
     PUSH = auto()
+    DUPLICATE = auto()
     SET = auto()
     PRINT = auto()
     ADD = auto()

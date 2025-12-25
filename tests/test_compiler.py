@@ -144,6 +144,31 @@ from func.analysed import *
             Opcode.PRINT,
         ]
     ),
+    (
+        Module({
+            'main': Call(
+                Reference('print'),
+                Call(
+                    Reference('integer_to_string'),
+                    Call(
+                        Reference('double'),
+                        Integer(6)
+                    ))
+            ),
+            'double': Lambda(
+                'x',
+                Call(Call(Reference('add'), Parameter('x')), Parameter('x'))
+            ),
+        }),
+        [
+            Opcode.PUSH,
+            6,
+            Opcode.DUPLICATE,
+            Opcode.ADD,
+            Opcode.INTEGER_TO_STRING,
+            Opcode.PRINT,
+        ]
+    ),
 ])
 def test_success(module, expected):
     actual = compile_(module)

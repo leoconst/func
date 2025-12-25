@@ -74,6 +74,13 @@ add10 = \\x -> add x 10
 ''',
         '17\n'
     ),
+    (
+'''
+main = print (integer_to_string (double 6))
+double = \\x -> add x x
+''',
+        '12\n'
+    ),
 ])
 def test_run(capsys, raw_source, expected_output):
     source = _extract_source(raw_source)
